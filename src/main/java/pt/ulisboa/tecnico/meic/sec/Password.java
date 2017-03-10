@@ -1,18 +1,17 @@
 package pt.ulisboa.tecnico.meic.sec;
 
-import java.time.Instant;
-
 public class Password {
     private String publicKey;
     private String domain;
     private String username;
     private String password;
     private String pwdSignature;
-    private Instant timestamp;
+    private String timestamp;
     private String nonce;
+    private String iv;
     private String reqSignature;
 
-    public Password(String publicKey, String domain, String username, String password, String pwdSignature, Instant timestamp, String nonce, String reqSignature) {
+    public Password(String publicKey, String domain, String username, String password, String pwdSignature, String timestamp, String nonce, String iv, String reqSignature) {
         this.publicKey = publicKey;
         this.domain = domain;
         this.username = username;
@@ -20,16 +19,18 @@ public class Password {
         this.pwdSignature = pwdSignature;
         this.timestamp = timestamp;
         this.nonce = nonce;
+        this.iv = iv;
         this.reqSignature = reqSignature;
     }
 
-    public Password(String publicKey, String domain, String username, String pwdSignature, Instant timestamp, String nonce, String reqSignature) {
+    public Password(String publicKey, String domain, String username, String pwdSignature, String timestamp, String nonce, String iv, String reqSignature) {
         this.publicKey = publicKey;
         this.domain = domain;
         this.username = username;
         this.pwdSignature = pwdSignature;
         this.timestamp = timestamp;
         this.nonce = nonce;
+        this.iv = iv;
         this.reqSignature = reqSignature;
     }
 
@@ -43,7 +44,40 @@ public class Password {
                 ", pwdSignature='" + pwdSignature + '\'' +
                 ", timestamp=" + timestamp +
                 ", nonce='" + nonce + '\'' +
+                ", iv='" + iv + '\'' +
                 ", reqSignature='" + reqSignature + '\'' +
                 '}';
+    }
+
+    public String getDomain() {
+        return domain;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public String getPwdSignature() {
+        return pwdSignature;
+    }
+
+    public String getTimestamp() {
+        return timestamp;
+    }
+
+    public String getNonce() {
+        return nonce;
+    }
+
+    public String getIv() {
+        return iv;
+    }
+
+    public String getReqSignature() {
+        return reqSignature;
     }
 }

@@ -58,7 +58,7 @@ public class ServerCalls {
 
         if (response.isSuccessful()) {
             Password newPassword = json.fromJson(response.body().string(), Password.class);
-            System.out.println("Password successful registered: " + newPassword.toString());
+            //System.out.println("Password successful registered: " + newPassword.toString());
             return newPassword;
         } else {
             System.out.println("Password not registered. HTTP Code: " + response.code());
@@ -78,7 +78,7 @@ public class ServerCalls {
 
         if (response.isSuccessful()) {
             Password pwdRetrieved = json.fromJson(response.body().string(), Password.class);
-            System.out.println("Password successful retrieved: " + pwdRetrieved.toString());
+            //System.out.println("Password successful retrieved: " + pwdRetrieved.toString());
             return pwdRetrieved;
         } else {
             System.out.println("Password not retrieved. HTTP Code: " + response.code());
