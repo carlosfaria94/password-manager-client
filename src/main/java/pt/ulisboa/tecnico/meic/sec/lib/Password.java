@@ -1,4 +1,4 @@
-package pt.ulisboa.tecnico.meic.sec;
+package pt.ulisboa.tecnico.meic.sec.lib;
 
 public class Password {
     private String publicKey;

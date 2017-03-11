@@ -1,4 +1,4 @@
-package pt.ulisboa.tecnico.meic.sec;
+package pt.ulisboa.tecnico.meic.sec.lib;
 
 import com.google.gson.Gson;
 import okhttp3.*;

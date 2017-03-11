@@ -1,4 +1,4 @@
-package pt.ulisboa.tecnico.meic.sec;
+package pt.ulisboa.tecnico.meic.sec.lib;
 
 import java.util.HashSet;
 import java.util.Set;

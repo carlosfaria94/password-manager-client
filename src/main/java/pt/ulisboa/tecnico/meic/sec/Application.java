@@ -1,7 +1,10 @@
 package pt.ulisboa.tecnico.meic.sec;
 
+import pt.ulisboa.tecnico.meic.sec.lib.PwdManagerClient;
+
 import java.io.Console;
 import java.security.KeyStore;
+import java.util.Scanner;
 
 public class Application {
     public static void main(String[] args){
@@ -14,14 +17,26 @@ public class Application {
             return;
         }
         Console console = System.console();
+
         System.out.println("Keystore Password:");
-        char[] password = console.readPassword();
+        char[] password = console.readPassword(); // batata
+
         try {
             KeyStore ks = CryptoUtilities.readKeystoreFile(args[0], password);
-            client.init(ks);
+            Scanner scanner = new Scanner(System.in);
+            System.out.println("Asymmetric Key Alias:");
+            String asymmAlias = scanner.nextLine();
+            System.out.println("Asymmetric Key Password:");
+            char[] asymmPassword = console.readPassword(); // batata
+            System.out.println("Symmetric Key Alias:");
+            String symmAlias = scanner.nextLine();
+            System.out.println("Symmetric Key Password:");
+            char[] symmPassword = console.readPassword(); // batata
+
+            client.init(ks, asymmAlias, asymmPassword, symmAlias, symmPassword);
             client.register_user();
-            client.save_password("youtube.com", "batata", "batata123");
-            System.out.println(client.retrieve_password("youtube.com", "batata"));
+            /*client.save_password("youtube.com", "batata", "batata123");
+            System.out.println(client.retrieve_password("youtube.com", "batata"));*/
         } catch (Exception e) {
             e.printStackTrace();
             System.err.println(e.getMessage());
