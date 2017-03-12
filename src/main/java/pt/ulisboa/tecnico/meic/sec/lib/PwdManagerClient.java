@@ -84,7 +84,6 @@ public final class PwdManagerClient {
                     fieldsToSend[4],
                     fieldsToSend[5],
                     fieldsToSend[6],
-                    fieldsToSend[7],
                     cryptoManager.convertBinaryToBase64(signFields(fieldsToSend))
             );
 
@@ -99,12 +98,7 @@ public final class PwdManagerClient {
     }
 
     private byte[] signFields(String[] fieldsToSend) throws NoSuchAlgorithmException, InvalidKeyException, SignatureException, UnrecoverableKeyException, KeyStoreException {
-        String toSign = "";
-        for (String aFieldsToSend : fieldsToSend) {
-            toSign += aFieldsToSend;
-        }
-        return cryptoManager.makeDigitalSignature(toSign.getBytes(),
-                CryptoUtilities.getPrivateKeyFromKeystore(keyStore, asymAlias, asymPwd));
+        return cryptoManager.signFields(fieldsToSend, keyStore, asymAlias, asymPwd);
     }
 
     private String[] encryptFields(String domain, String username, String password) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidAlgorithmParameterException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException, UnrecoverableKeyException, KeyStoreException {
@@ -156,7 +150,6 @@ public final class PwdManagerClient {
                     fieldsToSend[3],
                     fieldsToSend[4],
                     fieldsToSend[5],
-                    fieldsToSend[6],
                     cryptoManager.convertBinaryToBase64(signFields(fieldsToSend))
             );
 
@@ -200,36 +193,27 @@ public final class PwdManagerClient {
     }
 
     private void verifyServersSignature(Password retrieved) throws InvalidKeySpecException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
-        // verify servers signature here
-        String[] myFieldsBig = new String[]{retrieved.getPublicKey(),
+        String[] myFields = new String[]{retrieved.getPublicKey(),
                                             retrieved.getDomain(),
-                retrieved.getUsername(),
-                retrieved.getPassword(),
-        retrieved.getPwdSignature(),
-        retrieved.getTimestamp(),
-        retrieved.getNonce(),
-        retrieved.getIv()};
+                                            retrieved.getUsername(),
+                                            retrieved.getPassword(),
+                                            retrieved.getPwdSignature(),
+                                            retrieved.getTimestamp(),
+                                            retrieved.getNonce()};
 
         PublicKey serverPublicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(cryptoManager.convertBase64ToBinary(retrieved.getPublicKey())));
 
-        final boolean validSig = isValidSig(serverPublicKey, myFieldsBig, retrieved.getReqSignature());
+        final boolean validSig = isValidSig(serverPublicKey, myFields, retrieved.getReqSignature());
         if(!validSig) {
             System.out.println("Message not authenticated!");
             throw new RuntimeException("Message not authenticated!");
         }
     }
 
-    private boolean isValidSig(PublicKey publicKey, String[] fieldsToCheck, String signatureSent) throws NoSuchAlgorithmException, InvalidKeyException, SignatureException {
-        String toBeVerified = "";
-        for (String field :
-                fieldsToCheck) {
-            toBeVerified += field;
-        }
-
-        return cryptoManager.verifyDigitalSignature(cryptoManager.convertBase64ToBinary(signatureSent),
-                                            toBeVerified.getBytes(),
-                                            publicKey);
+    private boolean isValidSig(PublicKey serverPublicKey, String[] myFields, String reqSignature) throws NoSuchAlgorithmException, InvalidKeyException, SignatureException {
+        return cryptoManager.isValidSig(serverPublicKey, myFields, reqSignature);
     }
+
 
     public void close(){
 
