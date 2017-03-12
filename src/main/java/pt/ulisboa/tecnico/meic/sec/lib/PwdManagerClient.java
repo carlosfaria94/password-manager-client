@@ -9,6 +9,8 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import java.io.*;
 import java.security.*;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.X509EncodedKeySpec;
 import java.sql.Timestamp;
 
 public final class PwdManagerClient {
@@ -69,17 +71,11 @@ public final class PwdManagerClient {
                     encryptedStuff[0], // domain
                     encryptedStuff[1], // username
                     encryptedStuff[2], // password
-                    "SIGN1",
+                    cryptoManager.convertBinaryToBase64(signFields(encryptedStuff)),
                     cryptoManager.getActualTimestamp().toString(),
                     cryptoManager.convertBinaryToBase64(cryptoManager.generateNonce(32)),
                     cryptoManager.convertBinaryToBase64(lastIV),
             };
-            String toSign = "";
-            for (String aFieldsToSend : fieldsToSend) {
-                toSign += aFieldsToSend;
-            }
-            byte[] signature = cryptoManager.makeDigitalSignature(toSign.getBytes(),
-                    CryptoUtilities.getPrivateKeyFromKeystore(keyStore, asymAlias, asymPwd));
             Password pwdToRegister = new Password(
                     fieldsToSend[0],
                     fieldsToSend[1],
@@ -89,13 +85,26 @@ public final class PwdManagerClient {
                     fieldsToSend[5],
                     fieldsToSend[6],
                     fieldsToSend[7],
-                    cryptoManager.convertBinaryToBase64(signature)
+                    cryptoManager.convertBinaryToBase64(signFields(fieldsToSend))
             );
+
+            System.out.println(fieldsToSend[4]);
+
+            System.out.println(cryptoManager.convertBinaryToBase64(signFields(fieldsToSend)));
             call.putPassword(pwdToRegister);
         }catch (Exception e){
             e.printStackTrace();
             System.err.println(e.getMessage());
         }
+    }
+
+    private byte[] signFields(String[] fieldsToSend) throws NoSuchAlgorithmException, InvalidKeyException, SignatureException, UnrecoverableKeyException, KeyStoreException {
+        String toSign = "";
+        for (String aFieldsToSend : fieldsToSend) {
+            toSign += aFieldsToSend;
+        }
+        return cryptoManager.makeDigitalSignature(toSign.getBytes(),
+                CryptoUtilities.getPrivateKeyFromKeystore(keyStore, asymAlias, asymPwd));
     }
 
     private String[] encryptFields(String domain, String username, String password) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidAlgorithmParameterException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException, UnrecoverableKeyException, KeyStoreException {
@@ -134,17 +143,11 @@ public final class PwdManagerClient {
                     cryptoManager.convertBinaryToBase64(publicKey.getEncoded()),
                     encryptedStuff[0], // domain
                     encryptedStuff[1], // username
-                    "SIGN1",
+                    cryptoManager.convertBinaryToBase64(signFields(encryptedStuff)),
                     cryptoManager.getActualTimestamp().toString(),
                     cryptoManager.convertBinaryToBase64(cryptoManager.generateNonce(32)),
                     cryptoManager.convertBinaryToBase64(lastIV),
             };
-            String toSign = "";
-            for (String aFieldsToSend : fieldsToSend) {
-                toSign += aFieldsToSend;
-            }
-            byte[] signature = cryptoManager.makeDigitalSignature(toSign.getBytes(),
-                    CryptoUtilities.getPrivateKeyFromKeystore(keyStore, asymAlias, asymPwd));
 
             Password pwdToRetrieve = new Password(
                     fieldsToSend[0],
@@ -154,15 +157,15 @@ public final class PwdManagerClient {
                     fieldsToSend[4],
                     fieldsToSend[5],
                     fieldsToSend[6],
-                    cryptoManager.convertBinaryToBase64(signature)
+                    cryptoManager.convertBinaryToBase64(signFields(fieldsToSend))
             );
 
             Password retrieved = call.retrievePassword(pwdToRetrieve);
-            // verify signature here
+            verifyServersSignature(retrieved);
+            verifyServersIntegrity(publicKey, retrieved);
+            verifyFreshness(retrieved);
 
-            boolean valid = cryptoManager.isTimestampAndNonceValid(Timestamp.valueOf(retrieved.getTimestamp()),
-                                                    cryptoManager.convertBase64ToBinary(retrieved.getNonce()));
-            if(!valid) System.out.println("Message not fresh!");
+            // Finally, decrypting password.
             byte[] decryptedBytes = cryptoManager.runAES(cryptoManager.convertBase64ToBinary(retrieved.getPassword()),
                                 CryptoUtilities.getAESKeyFromKeystore(keyStore, symAlias, symPwd),
                                 lastIV,
@@ -174,6 +177,58 @@ public final class PwdManagerClient {
             System.err.println(e.getMessage());
         }
         return decryptedPwd;
+    }
+
+    private void verifyFreshness(Password retrieved) {
+        // Check Freshness
+        boolean validTime = cryptoManager.isTimestampAndNonceValid(Timestamp.valueOf(retrieved.getTimestamp()),
+                                                cryptoManager.convertBase64ToBinary(retrieved.getNonce()));
+        if(!validTime) {
+            System.out.println("Message not fresh!");
+            throw new RuntimeException("Message not fresh!");
+        }
+    }
+
+    private void verifyServersIntegrity(PublicKey publicKey, Password retrieved) throws NoSuchAlgorithmException, InvalidKeyException, SignatureException {
+        // Check tampering
+        String[] myFields = new String[]{retrieved.getDomain(), retrieved.getUsername(), retrieved.getPassword()};
+        boolean validSig = isValidSig(publicKey, myFields, retrieved.getPwdSignature());
+        if(!validSig){
+            System.out.println("Content tampered with!");
+            throw new RuntimeException("Content tampered with!");
+        }
+    }
+
+    private void verifyServersSignature(Password retrieved) throws InvalidKeySpecException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
+        // verify servers signature here
+        String[] myFieldsBig = new String[]{retrieved.getPublicKey(),
+                                            retrieved.getDomain(),
+                retrieved.getUsername(),
+                retrieved.getPassword(),
+        retrieved.getPwdSignature(),
+        retrieved.getTimestamp(),
+        retrieved.getNonce(),
+        retrieved.getIv()};
+
+        PublicKey serverPublicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(cryptoManager.convertBase64ToBinary(retrieved.getPublicKey())));
+
+        final boolean validSig = isValidSig(serverPublicKey, myFieldsBig, retrieved.getReqSignature());
+        if(!validSig) {
+            System.out.println("Message not authenticated!");
+            throw new RuntimeException("Message not authenticated!");
+        }
+    }
+
+    private boolean isValidSig(PublicKey publicKey, String[] fieldsToCheck, String signatureSent) throws NoSuchAlgorithmException, InvalidKeyException, SignatureException {
+        String toBeVerified = "";
+        for (String field :
+                fieldsToCheck) {
+            toBeVerified += field;
+        }
+
+        return cryptoManager.verifyDigitalSignature(cryptoManager.convertBase64ToBinary(signatureSent),
+                                            toBeVerified.getBytes(),
+                                            publicKey);
     }
 
     public void close(){
