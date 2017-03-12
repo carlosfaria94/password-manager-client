@@ -79,7 +79,7 @@ public final class PwdManagerClient {
                 toSign += aFieldsToSend;
             }
             byte[] signature = cryptoManager.makeDigitalSignature(toSign.getBytes(),
-                    CryptoUtilities.getPrivateKeyFromKeystore(keyStore, symAlias,symPwd));
+                    CryptoUtilities.getPrivateKeyFromKeystore(keyStore, asymAlias, asymPwd));
             Password pwdToRegister = new Password(
                     fieldsToSend[0],
                     fieldsToSend[1],
@@ -144,7 +144,7 @@ public final class PwdManagerClient {
                 toSign += aFieldsToSend;
             }
             byte[] signature = cryptoManager.makeDigitalSignature(toSign.getBytes(),
-                    CryptoUtilities.getPrivateKeyFromKeystore(keyStore, symAlias, symPwd));
+                    CryptoUtilities.getPrivateKeyFromKeystore(keyStore, asymAlias, asymPwd));
 
             Password pwdToRetrieve = new Password(
                     fieldsToSend[0],
