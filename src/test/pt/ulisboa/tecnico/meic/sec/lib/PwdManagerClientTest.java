@@ -34,6 +34,16 @@ class PwdManagerClientTest {
     void test() {
         pwdManagerClient.register_user();
         pwdManagerClient.save_password("youtube.com", "unicornio", "arcoiris");
+        String pwd = pwdManagerClient.retrieve_password("youtube.com", "unicornio");
+        System.out.println(pwd);
+        assertEquals(pwd, "arcoiris");
+    }
+
+    @Test
+    void test2() {
+        String pwd = pwdManagerClient.retrieve_password("youtube.com", "unicornio");
+        System.out.println(pwd);
+        assertEquals(pwd, "arcoiris");
     }
 
 

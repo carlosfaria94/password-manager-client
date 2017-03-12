@@ -41,23 +41,7 @@ public final class PwdManagerClient {
         call = new ServerCalls();
         cryptoManager = new CryptoManager();
         lastIV = new byte[BYTES_IV];
-        //getAesKeyReady();
         getIvReady();
-    }
-
-    private void getAesKeyReady() throws NoSuchAlgorithmException {
-        try {
-            aesKey = CryptoUtilities.readAESKey("aes.key");
-        } catch (IOException e) {
-            aesKey = cryptoManager.generateAESKey(128);
-            new Thread(() -> {
-                try {
-                    CryptoUtilities.writeAESKey("aes.key", aesKey);
-                } catch (IOException e1) {
-                    e1.printStackTrace();
-                }
-            }).start();
-        }
     }
 
     public void register_user(){
@@ -80,7 +64,7 @@ public final class PwdManagerClient {
             PublicKey publicKey = CryptoUtilities.getPublicKeyFromKeystore(keyStore, asymAlias, asymPwd);
             String[] encryptedStuff = encryptFields(domain, username, password);
 
-            Password pwdToRegister = new Password(
+            String[] fieldsToSend = new String[]{
                     cryptoManager.convertBinaryToBase64(publicKey.getEncoded()),
                     encryptedStuff[0], // domain
                     encryptedStuff[1], // username
@@ -89,7 +73,23 @@ public final class PwdManagerClient {
                     cryptoManager.getActualTimestamp().toString(),
                     cryptoManager.convertBinaryToBase64(cryptoManager.generateNonce(32)),
                     cryptoManager.convertBinaryToBase64(lastIV),
-                    "SIGN2"
+            };
+            String toSign = "";
+            for (String aFieldsToSend : fieldsToSend) {
+                toSign += aFieldsToSend;
+            }
+            byte[] signature = cryptoManager.makeDigitalSignature(toSign.getBytes(),
+                    CryptoUtilities.getPrivateKeyFromKeystore(keyStore, symAlias,symPwd));
+            Password pwdToRegister = new Password(
+                    fieldsToSend[0],
+                    fieldsToSend[1],
+                    fieldsToSend[2],
+                    fieldsToSend[3],
+                    fieldsToSend[4],
+                    fieldsToSend[5],
+                    fieldsToSend[6],
+                    fieldsToSend[7],
+                    cryptoManager.convertBinaryToBase64(signature)
             );
             call.putPassword(pwdToRegister);
         }catch (Exception e){
@@ -127,20 +127,39 @@ public final class PwdManagerClient {
     public String retrieve_password(String domain, String username){
         String decryptedPwd = "";
         try {
-            PublicKey publicKey = CryptoUtilities.getPublicKeyFromKeystore(keyStore, "aa", "aa".toCharArray());
+            PublicKey publicKey = CryptoUtilities.getPublicKeyFromKeystore(keyStore, asymAlias, asymPwd);
             String[] encryptedStuff = encryptFields(domain, username);
-            Password pwdToRetrieve = new Password(
+
+            String[] fieldsToSend = new String[]{
                     cryptoManager.convertBinaryToBase64(publicKey.getEncoded()),
-                    encryptedStuff[0],
-                    encryptedStuff[1],
-                    "SIGN1", // not sure if this is needed
+                    encryptedStuff[0], // domain
+                    encryptedStuff[1], // username
+                    "SIGN1",
                     cryptoManager.getActualTimestamp().toString(),
                     cryptoManager.convertBinaryToBase64(cryptoManager.generateNonce(32)),
                     cryptoManager.convertBinaryToBase64(lastIV),
-                    "SIGN2"
+            };
+            String toSign = "";
+            for (String aFieldsToSend : fieldsToSend) {
+                toSign += aFieldsToSend;
+            }
+            byte[] signature = cryptoManager.makeDigitalSignature(toSign.getBytes(),
+                    CryptoUtilities.getPrivateKeyFromKeystore(keyStore, symAlias, symPwd));
+
+            Password pwdToRetrieve = new Password(
+                    fieldsToSend[0],
+                    fieldsToSend[1],
+                    fieldsToSend[2],
+                    fieldsToSend[3],
+                    fieldsToSend[4],
+                    fieldsToSend[5],
+                    fieldsToSend[6],
+                    cryptoManager.convertBinaryToBase64(signature)
             );
+
             Password retrieved = call.retrievePassword(pwdToRetrieve);
             // verify signature here
+
             boolean valid = cryptoManager.isTimestampAndNonceValid(Timestamp.valueOf(retrieved.getTimestamp()),
                                                     cryptoManager.convertBase64ToBinary(retrieved.getNonce()));
             if(!valid) System.out.println("Message not fresh!");
@@ -164,8 +183,9 @@ public final class PwdManagerClient {
     private void getIvReady() throws NoSuchAlgorithmException {
         try (BufferedInputStream in = new BufferedInputStream(new FileInputStream(IV_DAT))){
             int readBytes = in.read(lastIV);
-            if(readBytes != -1) throw new IOException();
+            //if(readBytes != -1) throw new IOException();
         } catch (IOException e) {
+            e.printStackTrace();
             lastIV = cryptoManager.generateIV(BYTES_IV);
             new Thread(() -> {
                 try (BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(IV_DAT))){
