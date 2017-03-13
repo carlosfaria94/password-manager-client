@@ -1,8 +1,8 @@
 package pt.ulisboa.tecnico.meic.sec.lib;
 
 public class Password {
-    private String publicKey;
 
+    private String publicKey;
     private String domain;
     private String username;
     private String password;
@@ -10,6 +10,7 @@ public class Password {
     private String timestamp;
     private String nonce;
     private String reqSignature;
+
     public Password(String publicKey, String domain, String username, String password, String pwdSignature, String timestamp, String nonce, String reqSignature) {
         this.publicKey = publicKey;
         this.domain = domain;

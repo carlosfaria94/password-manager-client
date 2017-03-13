@@ -31,7 +31,7 @@ class PwdManagerClientTest {
     }
 
     @Test
-    void test() {
+    void testSimpleSave() {
         pwdManagerClient.register_user();
         pwdManagerClient.save_password("youtube.com", "unicornio", "arcoiris");
         String pwd = pwdManagerClient.retrieve_password("youtube.com", "unicornio");
@@ -40,11 +40,57 @@ class PwdManagerClientTest {
     }
 
     @Test
-    void test2() {
+    void testSimpleRetrieve() {
         String pwd = pwdManagerClient.retrieve_password("youtube.com", "unicornio");
         System.out.println(pwd);
         assertEquals(pwd, "arcoiris");
     }
 
+    @Test
+    void testSaveSamePasswordDifferentDomainAndUser() {
+        final String password = "mississippi";
+        pwdManagerClient.save_password("facebook.com", "tomsawyer", password);
+        pwdManagerClient.save_password("fenix.ist.utl.pt", "huckleberry_finn", password);
 
+        String pwd = pwdManagerClient.retrieve_password("facebook.com", "tomsawyer");
+        System.out.println(pwd);
+        assertEquals(pwd, password);
+        String pwd2 = pwdManagerClient.retrieve_password("fenix.ist.utl.pt", "huckleberry_finn");
+        System.out.println(pwd2);
+        assertEquals(pwd2, password);
+    }
+
+    @Test
+    void testSaveSameUserAndPassword() {
+        final String password = "pokemon-master";
+        pwdManagerClient.save_password("pokedex.org", "ash", password);
+        pwdManagerClient.save_password("pokecenter.net", "ash", password);
+
+        String pwd = pwdManagerClient.retrieve_password("pokedex.org", "ash");
+        System.out.println(pwd);
+        assertEquals(pwd, password);
+        String pwd2 = pwdManagerClient.retrieve_password("pokecenter.net", "ash");
+        System.out.println(pwd2);
+        assertEquals(pwd2, password);
+    }
+
+    @Test
+    void testSaveSameDomain() {
+        final String password = "portugal";
+        pwdManagerClient.save_password("supersecret.portugal.pt", "batatinha", password);
+        pwdManagerClient.save_password("supersecret.portugal.pt", "companhia", password);
+
+        String pwd = pwdManagerClient.retrieve_password("supersecret.portugal.pt", "batatinha");
+        System.out.println(pwd);
+        assertEquals(pwd, password);
+        String pwd2 = pwdManagerClient.retrieve_password("supersecret.portugal.pt", "companhia");
+        System.out.println(pwd2);
+        assertEquals(pwd2, password);
+    }
+
+
+    @Test
+    void doNothing(){
+        // Just to run setUp and tearDown
+    }
 }

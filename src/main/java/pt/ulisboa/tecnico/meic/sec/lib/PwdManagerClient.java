@@ -1,5 +1,6 @@
 package pt.ulisboa.tecnico.meic.sec.lib;
 
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import pt.ulisboa.tecnico.meic.sec.CryptoManager;
 import pt.ulisboa.tecnico.meic.sec.CryptoUtilities;
 import pt.ulisboa.tecnico.meic.sec.lib.exception.MessageNotFreshException;
@@ -15,11 +16,13 @@ import java.security.*;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
 import java.sql.Timestamp;
+import java.util.Map;
+import java.util.TreeMap;
 
 public final class PwdManagerClient {
 
     private static final int BYTES_IV = 16;
-    private static final String IV_DAT = "iv.dat";
+    private static final String IV_HASH_DAT = "ivhash.dat";
 
     private transient KeyStore keyStore;
     private transient String asymAlias;
@@ -27,7 +30,7 @@ public final class PwdManagerClient {
     private transient String symAlias;
     private transient char[] symPwd;
 
-    private byte[] lastIV;
+    private TreeMap<ImmutablePair<String,String>, byte[]> ivMap;
     private ServerCalls call;
     private CryptoManager cryptoManager;
 
@@ -43,8 +46,9 @@ public final class PwdManagerClient {
         this.symPwd = symPwd;
         call = new ServerCalls();
         cryptoManager = new CryptoManager();
-        lastIV = new byte[BYTES_IV];
-        getIvReady();
+        //lastIV = new byte[BYTES_IV];
+        //getIvReady();
+        loadIvs();
     }
 
     public void register_user(){
@@ -75,7 +79,6 @@ public final class PwdManagerClient {
                     cryptoManager.convertBinaryToBase64(signFields(encryptedStuff)),
                     cryptoManager.getActualTimestamp().toString(),
                     cryptoManager.convertBinaryToBase64(cryptoManager.generateNonce(32)),
-                    cryptoManager.convertBinaryToBase64(lastIV),
             };
             Password pwdToRegister = new Password(
                     fieldsToSend[0],
@@ -88,9 +91,6 @@ public final class PwdManagerClient {
                     cryptoManager.convertBinaryToBase64(signFields(fieldsToSend))
             );
 
-            System.out.println(fieldsToSend[4]);
-
-            System.out.println(cryptoManager.convertBinaryToBase64(signFields(fieldsToSend)));
             call.putPassword(pwdToRegister);
         }catch (Exception e){
             e.printStackTrace();
@@ -111,7 +111,6 @@ public final class PwdManagerClient {
                     cryptoManager.convertBinaryToBase64(signFields(encryptedStuff)),
                     cryptoManager.getActualTimestamp().toString(),
                     cryptoManager.convertBinaryToBase64(cryptoManager.generateNonce(32)),
-                    cryptoManager.convertBinaryToBase64(lastIV),
             };
 
             Password pwdToRetrieve = new Password(
@@ -132,7 +131,7 @@ public final class PwdManagerClient {
             // Finally, decrypting password.
             byte[] decryptedBytes = cryptoManager.runAES(cryptoManager.convertBase64ToBinary(retrieved.getPassword()),
                     CryptoUtilities.getAESKeyFromKeystore(keyStore, symAlias, symPwd),
-                    lastIV,
+                    retrieveIV(domain, username),
                     Cipher.DECRYPT_MODE);
             decryptedPwd = new String(decryptedBytes);
 
@@ -144,6 +143,11 @@ public final class PwdManagerClient {
     }
 
     public void close(){
+        saveIvs();
+        // cute as fck :D TODO delete this when release
+        for(Map.Entry<ImmutablePair<String,String>, byte[]> entry : ivMap.entrySet()){
+            System.out.println(entry);
+        }
         keyStore = null;
         asymAlias = null;
         asymPwd = null;
@@ -162,10 +166,20 @@ public final class PwdManagerClient {
             encryptedStuff[i] = cryptoManager.convertBinaryToBase64(
                             cryptoManager.runAES(stuff[i].getBytes(),
                             CryptoUtilities.getAESKeyFromKeystore(keyStore, symAlias, symPwd),
-                            lastIV,
+                            retrieveIV(domain, username),
                             Cipher.ENCRYPT_MODE));
         }
         return encryptedStuff;
+    }
+
+    private byte[] retrieveIV(String domain, String username) throws NoSuchAlgorithmException {
+        ImmutablePair<String, String> key = new ImmutablePair<>(domain, username);
+        if(ivMap.containsKey(key)) return ivMap.get(key);
+        else {
+            byte[] iv = cryptoManager.generateIV(BYTES_IV);
+            ivMap.put(key, iv);
+            return iv;
+        }
     }
 
     private String[] encryptFields(String domain, String username) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidAlgorithmParameterException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException, UnrecoverableKeyException, KeyStoreException {
@@ -175,7 +189,7 @@ public final class PwdManagerClient {
             encryptedStuff[i] = cryptoManager.convertBinaryToBase64(
                     cryptoManager.runAES(stuff[i].getBytes(),
                             CryptoUtilities.getAESKeyFromKeystore(keyStore, symAlias, symPwd),
-                            lastIV,
+                            retrieveIV(domain, username),
                             Cipher.ENCRYPT_MODE));
         }
         return encryptedStuff;
@@ -223,20 +237,24 @@ public final class PwdManagerClient {
         return cryptoManager.isValidSig(serverPublicKey, myFields, reqSignature);
     }
 
-    private void getIvReady() throws NoSuchAlgorithmException {
-        try (BufferedInputStream in = new BufferedInputStream(new FileInputStream(IV_DAT))){
-            int readBytes = in.read(lastIV);
-            //if(readBytes != -1) throw new IOException();
-        } catch (IOException e) {
+    private void loadIvs() throws NoSuchAlgorithmException {
+        try (ObjectInputStream in = new ObjectInputStream(new BufferedInputStream(new FileInputStream(IV_HASH_DAT)))){
+            ivMap = (TreeMap<ImmutablePair<String,String>, byte[]>) in.readObject();
+        } catch (ClassNotFoundException | IOException e) {
             e.printStackTrace();
-            lastIV = cryptoManager.generateIV(BYTES_IV);
-            new Thread(() -> {
-                try (BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(IV_DAT))){
-                    out.write(lastIV);
-                }catch (IOException ex){
-                    ex.printStackTrace();
-                }
-            }).start();
+            System.err.println(e.getMessage() + "\nStarting a new IV Table.");
+            ivMap = new TreeMap<>();
         }
+    }
+
+    private void saveIvs() {
+        //new Thread(() -> {
+            try (ObjectOutputStream out = new ObjectOutputStream(
+                    new BufferedOutputStream(new FileOutputStream(IV_HASH_DAT)))){
+                out.writeObject(ivMap);
+            }catch (IOException ex){
+                ex.printStackTrace();
+            }
+        //}).start();
     }
 }
