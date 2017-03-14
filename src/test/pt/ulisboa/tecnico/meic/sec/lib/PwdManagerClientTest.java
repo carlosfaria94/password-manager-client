@@ -1,8 +1,8 @@
 package pt.ulisboa.tecnico.meic.sec.lib;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 import pt.ulisboa.tecnico.meic.sec.CryptoUtilities;
 
 import java.io.IOException;
@@ -11,27 +11,28 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.Assert.assertEquals;
 
-class PwdManagerClientTest {
+
+public class PwdManagerClientTest {
     private static final String BATATA = "batata";
     private PwdManagerClient pwdManagerClient;
     private KeyStore ks;
 
-    @BeforeEach
-    void setUp() throws CertificateException, NoSuchAlgorithmException, KeyStoreException, IOException {
+    @Before
+    public void setUp() throws CertificateException, NoSuchAlgorithmException, KeyStoreException, IOException {
         pwdManagerClient = new PwdManagerClient();
         ks = CryptoUtilities.readKeystoreFile("keystore.jceks", BATATA.toCharArray());
         pwdManagerClient.init(ks, "asymm", BATATA.toCharArray(), "symm", BATATA.toCharArray());
     }
 
-    @AfterEach
-    void tearDown() {
+    @After
+    public void tearDown() {
         pwdManagerClient.close();
     }
 
     @Test
-    void testSimpleSave() {
+    public void testSimpleSave() {
         pwdManagerClient.register_user();
         pwdManagerClient.save_password("youtube.com", "unicornio", "arcoiris");
         String pwd = pwdManagerClient.retrieve_password("youtube.com", "unicornio");
@@ -40,14 +41,14 @@ class PwdManagerClientTest {
     }
 
     @Test
-    void testSimpleRetrieve() {
+    public void testSimpleRetrieve() {
         String pwd = pwdManagerClient.retrieve_password("youtube.com", "unicornio");
         System.out.println(pwd);
         assertEquals(pwd, "arcoiris");
     }
 
     @Test
-    void testSaveSamePasswordDifferentDomainAndUser() {
+    public void testSaveSamePasswordDifferentDomainAndUser() {
         final String password = "mississippi";
         pwdManagerClient.save_password("facebook.com", "tomsawyer", password);
         pwdManagerClient.save_password("fenix.ist.utl.pt", "huckleberry_finn", password);
@@ -61,7 +62,7 @@ class PwdManagerClientTest {
     }
 
     @Test
-    void testSaveSameUserAndPassword() {
+    public void testSaveSameUserAndPassword() {
         final String password = "pokemon-master";
         pwdManagerClient.save_password("pokedex.org", "ash", password);
         pwdManagerClient.save_password("pokecenter.net", "ash", password);
@@ -75,7 +76,7 @@ class PwdManagerClientTest {
     }
 
     @Test
-    void testSaveSameDomain() {
+    public void testSaveSameDomain() {
         final String password = "portugal";
         pwdManagerClient.save_password("supersecret.portugal.pt", "batatinha", password);
         pwdManagerClient.save_password("supersecret.portugal.pt", "companhia", password);
@@ -90,7 +91,7 @@ class PwdManagerClientTest {
 
 
     @Test
-    void doNothing(){
+    public void doNothing(){
         // Just to run setUp and tearDown
     }
 }
