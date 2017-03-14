@@ -200,3 +200,4 @@ local.properties
 /utils.iml
 /.idea/
 /keystore.jceks
+/ivhash.dat

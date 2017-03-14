@@ -36,7 +36,14 @@ public class ServerCalls {
             System.out.println("User successful registered: " + newUser.toString());
             return newUser;
         } else {
-            System.out.println("User not registered. HTTP Code: " + response.code());
+            switch (response.code()) {
+                case 409: System.out.println("User already registered.");
+                break;
+                case 500: System.out.println("User not registered. Internal Server error.");
+                break;
+                default: System.out.println("User not registered.");
+                break;
+            }
             return null;
         }
     }

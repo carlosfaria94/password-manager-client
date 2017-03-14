@@ -35,50 +35,13 @@ public class Application {
 
             client.init(ks, asymmAlias, asymmPassword, symmAlias, symmPassword);
             client.register_user();
-            /*client.save_password("youtube.com", "batata", "batata123");
-            System.out.println(client.retrieve_password("youtube.com", "batata"));*/
+            client.save_password("youtube.com", "batata", "batata123");
+            System.out.println(client.retrieve_password("youtube.com", "batata"));
+            client.close();
         } catch (Exception e) {
             e.printStackTrace();
             System.err.println(e.getMessage());
 
         }
     }
-/*
-    public static void main(String[] args){
-        PwdManagerClient client = new PwdManagerClient();
-        System.out.println(client.helloWorld());
-
-        ServerCalls call = new ServerCalls();
-        try {
-            String publicKey = "oooo";
-
-            User user = new User(publicKey);
-            call.register(user);
-
-            Password pwdToRegister = new Password(
-                    publicKey,
-                    "xxsd.com",
-                    "kkkk",
-                    "ups",
-                    "SIGN1",
-                    Instant.now(),
-                    "ttt",
-                    "SIGN2"
-            );
-            call.putPassword(pwdToRegister);
-
-            Password pwdToRetrieve = new Password(
-                    publicKey,
-                    "ttt.com",
-                    "carlosfaria",
-                    "SIGN1",
-                    Instant.now(),
-                    "ttt",
-                    "SIGN2"
-            );
-            call.retrievePassword(pwdToRetrieve);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }*/
 }
