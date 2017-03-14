@@ -143,7 +143,15 @@ public final class PwdManagerClient {
     }
 
     public void close(){
-        saveIvs();
+        Thread t = new Thread(() -> {
+            try (ObjectOutputStream out = new ObjectOutputStream(
+                    new BufferedOutputStream(new FileOutputStream(IV_HASH_DAT)))){
+                out.writeObject(ivMap);
+            }catch (IOException ex){
+                ex.printStackTrace();
+            }
+        });
+        t.start();
         // cute as fck :D TODO delete this when release
         for(Map.Entry<ImmutablePair<String,String>, byte[]> entry : ivMap.entrySet()){
             System.out.println(entry);
@@ -153,6 +161,11 @@ public final class PwdManagerClient {
         asymPwd = null;
         symAlias = null;
         symPwd = null;
+        try {
+            t.join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     private byte[] signFields(String[] fieldsToSend) throws NoSuchAlgorithmException, InvalidKeyException, SignatureException, UnrecoverableKeyException, KeyStoreException {
@@ -247,14 +260,4 @@ public final class PwdManagerClient {
         }
     }
 
-    private void saveIvs() {
-        //new Thread(() -> {
-            try (ObjectOutputStream out = new ObjectOutputStream(
-                    new BufferedOutputStream(new FileOutputStream(IV_HASH_DAT)))){
-                out.writeObject(ivMap);
-            }catch (IOException ex){
-                ex.printStackTrace();
-            }
-        //}).start();
-    }
 }
