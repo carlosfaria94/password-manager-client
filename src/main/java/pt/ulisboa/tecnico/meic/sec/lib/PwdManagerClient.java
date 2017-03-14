@@ -237,7 +237,9 @@ public final class PwdManagerClient {
                                             retrieved.getTimestamp(),
                                             retrieved.getNonce()};
 
-        PublicKey serverPublicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(cryptoManager.convertBase64ToBinary(retrieved.getPublicKey())));
+        PublicKey serverPublicKey = KeyFactory.getInstance("RSA").generatePublic(
+                new X509EncodedKeySpec(cryptoManager.convertBase64ToBinary(retrieved.getPublicKey()))
+        );
 
         final boolean validSig = isValidSig(serverPublicKey, myFields, retrieved.getReqSignature());
         if(!validSig) {
