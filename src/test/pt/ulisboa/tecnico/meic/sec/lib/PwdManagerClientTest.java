@@ -17,13 +17,15 @@ import static org.junit.Assert.assertEquals;
 public class PwdManagerClientTest {
     private static final String BATATA = "batata";
     private PwdManagerClient pwdManagerClient;
-    private KeyStore ks;
+
+
 
     @Before
     public void setUp() throws CertificateException, NoSuchAlgorithmException, KeyStoreException, IOException {
         pwdManagerClient = new PwdManagerClient();
-        ks = CryptoUtilities.readKeystoreFile("keystore.jceks", BATATA.toCharArray());
+        KeyStore ks = CryptoUtilities.readKeystoreFile("keystore.jceks", BATATA.toCharArray());
         pwdManagerClient.init(ks, "asymm", BATATA.toCharArray(), "symm", BATATA.toCharArray());
+        pwdManagerClient.register_user();
     }
 
     @After
@@ -33,7 +35,6 @@ public class PwdManagerClientTest {
 
     @Test
     public void testSimpleSave() {
-        pwdManagerClient.register_user();
         pwdManagerClient.save_password("youtube.com", "unicornio", "arcoiris");
         String pwd = pwdManagerClient.retrieve_password("youtube.com", "unicornio");
         System.out.println(pwd);
@@ -45,6 +46,15 @@ public class PwdManagerClientTest {
         String pwd = pwdManagerClient.retrieve_password("youtube.com", "unicornio");
         System.out.println(pwd);
         assertEquals(pwd, "arcoiris");
+    }
+
+    @Test
+    public void testLoopRetrieve() {
+        for(int i = 0 ; i < 4 ; i++) {
+            String pwd = pwdManagerClient.retrieve_password("youtube.com", "unicornio");
+            System.out.println(pwd);
+            assertEquals(pwd, "arcoiris");
+        }
     }
 
     @Test
@@ -87,6 +97,19 @@ public class PwdManagerClientTest {
         String pwd2 = pwdManagerClient.retrieve_password("supersecret.portugal.pt", "companhia");
         System.out.println(pwd2);
         assertEquals(pwd2, password);
+    }
+
+    @Test
+    public void testUpdatePassword() {
+        final String password = "sec";
+        pwdManagerClient.save_password("youtube.com", "ist", password);
+        String pwd = pwdManagerClient.retrieve_password("youtube.com", "ist");
+        System.out.println(pwd);
+        assertEquals(pwd, password);
+        pwdManagerClient.save_password("youtube.com", "ist", password + "123");
+        String pwd2 = pwdManagerClient.retrieve_password("youtube.com", "ist");
+        System.out.println(pwd2);
+        assertEquals(pwd2, password + "123");
     }
 
 
