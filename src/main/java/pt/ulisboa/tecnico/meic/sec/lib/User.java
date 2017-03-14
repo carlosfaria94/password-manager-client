@@ -7,10 +7,16 @@ public class User {
     private int id;
     private String fingerprint;
     private String publicKey;
+    private String signature;
     private Set<Password> passwords = new HashSet<>();
 
     public User(String publicKey) {
         this.publicKey = publicKey;
+    }
+
+    public User(String publicKey, String signature) {
+        this.publicKey = publicKey;
+        this.signature = signature;
     }
 
     public User(int id, String fingerprint, Set<Password> passwords) {

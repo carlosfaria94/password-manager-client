@@ -55,12 +55,11 @@ public final class PwdManagerClient {
         PublicKey publicKey = null;
         try {
             publicKey = CryptoUtilities.getPublicKeyFromKeystore(keyStore, asymAlias, asymPwd);
-        } catch (UnrecoverableKeyException | NoSuchAlgorithmException | KeyStoreException e) {
-            e.printStackTrace();
-        }
-        User user = new User(cryptoManager.convertBinaryToBase64(publicKey.getEncoded()));
-        try {
+            String publicKeyB64 = cryptoManager.convertBinaryToBase64(publicKey.getEncoded());
+            User user = new User(publicKeyB64, cryptoManager.convertBinaryToBase64(signFields(new String[]{publicKeyB64})));
             call.register(user);
+        } catch (UnrecoverableKeyException | NoSuchAlgorithmException | KeyStoreException | InvalidKeyException | SignatureException e) {
+            e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         }

@@ -19,7 +19,7 @@ public class ServerCalls {
     /**
      * Register user in the server
      *
-     * @param publicKey
+     * @param user
      * @return - null when user is not successful registered
      * @throws IOException
      */
