@@ -32,20 +32,6 @@ public class Password {
         this.reqSignature = reqSignature;
     }
 
-    @Override
-    public String toString() {
-        return "Password{" +
-                "publicKey='" + publicKey + '\'' +
-                ", domain='" + domain + '\'' +
-                ", username='" + username + '\'' +
-                ", password='" + password + '\'' +
-                ", pwdSignature='" + pwdSignature + '\'' +
-                ", timestamp=" + timestamp +
-                ", nonce='" + nonce + '\'' +
-                ", reqSignature='" + reqSignature + '\'' +
-                '}';
-    }
-
     public String getPublicKey() {
         return publicKey;
     }
@@ -76,5 +62,19 @@ public class Password {
 
     public String getReqSignature() {
         return reqSignature;
+    }
+
+    @Override
+    public String toString() {
+        return "Password{" +
+                "publicKey='" + publicKey + '\'' +
+                ", domain='" + domain + '\'' +
+                ", username='" + username + '\'' +
+                ", password='" + password + '\'' +
+                ", pwdSignature='" + pwdSignature + '\'' +
+                ", timestamp='" + timestamp + '\'' +
+                ", nonce='" + nonce + '\'' +
+                ", reqSignature='" + reqSignature + '\'' +
+                '}';
     }
 }

@@ -37,11 +37,13 @@ public class Application {
             client.register_user();
             client.save_password("youtube.com", "batata", "batata123");
             System.out.println(client.retrieve_password("youtube.com", "batata"));
+            client.save_password("youtube.com", "batata", "batata123");
+            System.out.println(client.retrieve_password("youtube.com", "batata"));
             client.close();
         } catch (Exception e) {
             e.printStackTrace();
             System.err.println(e.getMessage());
-
+            System.exit(0);
         }
     }
 }
