@@ -201,3 +201,4 @@ local.properties
 /.idea/
 /keystore.jceks
 /ivhash.dat
+/password-manager-client.iml
