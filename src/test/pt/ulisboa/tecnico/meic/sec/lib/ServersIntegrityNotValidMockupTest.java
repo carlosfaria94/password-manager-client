@@ -4,30 +4,26 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import pt.ulisboa.tecnico.meic.sec.CryptoUtilities;
-import pt.ulisboa.tecnico.meic.sec.lib.exception.MessageNotFreshException;
 import pt.ulisboa.tecnico.meic.sec.lib.exception.RemoteServerInvalidResponseException;
-import pt.ulisboa.tecnico.meic.sec.lib.exception.ServersSignatureNotValidException;
+import pt.ulisboa.tecnico.meic.sec.lib.exception.ServersIntegrityException;
 
 import java.io.IOException;
 import java.security.*;
 import java.security.cert.CertificateException;
 
-import static org.junit.Assert.assertEquals;
 
-
-public class MockTest {
+public class ServersIntegrityNotValidMockupTest {
     private static final String BATATA = "batata";
     private PwdManagerClient pwdManagerClient;
-    private ServerCalls serverCalls =  new ServerCalls();
-    private ServerCallsInvalidServersIntegrityMockup isi;
+    private ServerCallsInvalidServersIntegrityMockup server;
 
     @Before
     public void setUp() throws CertificateException, NoSuchAlgorithmException, KeyStoreException, IOException, RemoteServerInvalidResponseException, SignatureException, NoSuchProviderException, InvalidKeyException {
         pwdManagerClient = new PwdManagerClient();
-        isi = new ServerCallsInvalidServersIntegrityMockup();
+        server = new ServerCallsInvalidServersIntegrityMockup();
 
         KeyStore ks = CryptoUtilities.readKeystoreFile("keystore.jceks", BATATA.toCharArray());
-        pwdManagerClient.init(ks, "asymm", BATATA.toCharArray(), "symm", BATATA.toCharArray(), isi);
+        pwdManagerClient.init(ks, "asymm", BATATA.toCharArray(), "symm", BATATA.toCharArray(), server);
         pwdManagerClient.register_user();
     }
 
@@ -36,8 +32,8 @@ public class MockTest {
         pwdManagerClient.close();
     }
 
-    @Test(expected = ServersSignatureNotValidException.class)
-    public void ServersSignatureNotValidTest() throws RemoteServerInvalidResponseException {
+    @Test(expected = ServersIntegrityException.class)
+    public void ServersIntegrityNotValidTest() throws RemoteServerInvalidResponseException {
 
         pwdManagerClient.save_password("youtube.com", "unicornio", "arcoiris");
         String pwd = pwdManagerClient.retrieve_password("youtube.com", "unicornio");

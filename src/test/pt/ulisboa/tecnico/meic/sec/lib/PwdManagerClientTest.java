@@ -18,7 +18,6 @@ import static org.junit.Assert.assertEquals;
 public class PwdManagerClientTest {
     private static final String BATATA = "batata";
     private PwdManagerClient pwdManagerClient;
-    private ServerCalls serverCalls =  new ServerCalls();
 
     @Before
     public void setUp() throws CertificateException, NoSuchAlgorithmException, KeyStoreException, IOException, RemoteServerInvalidResponseException {

@@ -1,23 +1,10 @@
 package pt.ulisboa.tecnico.meic.sec.lib;
 
-//import com.squareup.okhttp.HttpUrl;
-//import com.squareup.okhttp.mockwebserver.MockResponse;
-//import com.squareup.okhttp.mockwebserver.MockWebServer;
-//import com.squareup.okhttp.mockwebserver.RecordedRequest;
 import pt.ulisboa.tecnico.meic.sec.CryptoManager;
-import sun.security.tools.keytool.CertAndKeyGen;
-import sun.security.x509.X500Name;
-
-import java.io.IOException;
 import java.security.*;
-import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
 import java.util.HashMap;
 
 public class ServerCallsMockup extends ServerCalls {
-    //private Password password = null;
-    //MockWebServer server = new MockWebServer();
-    //HttpUrl baseUrl = server.url("/password/");
     protected CryptoManager cryptoManager;
     protected PublicKey publicKey;
     protected PrivateKey privateKey;
@@ -34,7 +21,7 @@ public class ServerCallsMockup extends ServerCalls {
         cryptoManager = new CryptoManager();
     }
 
-    private byte[] signFields (String[] fieldsToSend) throws NoSuchAlgorithmException, InvalidKeyException, SignatureException {
+    protected byte[] signFields (String[] fieldsToSend) throws NoSuchAlgorithmException, InvalidKeyException, SignatureException {
         return cryptoManager.signFields(fieldsToSend, privateKey);
     }
 
