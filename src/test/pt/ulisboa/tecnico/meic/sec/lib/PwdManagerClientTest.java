@@ -1,5 +1,6 @@
 package pt.ulisboa.tecnico.meic.sec.lib;
 
+import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -15,7 +16,7 @@ import java.security.cert.CertificateException;
 import static org.junit.Assert.assertEquals;
 
 
-public class PwdManagerClientTest {
+public class PwdManagerClientTest extends TestCase {
     private static final String BATATA = "batata";
     private PwdManagerClient pwdManagerClient;
 

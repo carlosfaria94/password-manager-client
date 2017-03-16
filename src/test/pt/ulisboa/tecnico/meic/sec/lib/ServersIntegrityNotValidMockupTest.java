@@ -1,5 +1,6 @@
 package pt.ulisboa.tecnico.meic.sec.lib;
 
+import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -12,7 +13,7 @@ import java.security.*;
 import java.security.cert.CertificateException;
 
 
-public class ServersIntegrityNotValidMockupTest {
+public class ServersIntegrityNotValidMockupTest extends TestCase {
     private static final String BATATA = "batata";
     private PwdManagerClient pwdManagerClient;
     private ServerCallsInvalidServersIntegrityMockup server;
@@ -33,7 +34,7 @@ public class ServersIntegrityNotValidMockupTest {
     }
 
     @Test(expected = ServersIntegrityException.class)
-    public void ServersIntegrityNotValidTest() throws RemoteServerInvalidResponseException {
+    public void testServersIntegrityNotValid() throws RemoteServerInvalidResponseException {
 
         pwdManagerClient.save_password("youtube.com", "unicornio", "arcoiris");
         String pwd = pwdManagerClient.retrieve_password("youtube.com", "unicornio");

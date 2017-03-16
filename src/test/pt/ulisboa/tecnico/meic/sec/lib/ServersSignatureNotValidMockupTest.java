@@ -1,5 +1,6 @@
 package pt.ulisboa.tecnico.meic.sec.lib;
 
+import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -14,7 +15,7 @@ import java.security.cert.CertificateException;
 import static org.junit.Assert.assertEquals;
 
 
-public class ServersSignatureNotValidMockupTest {
+public class ServersSignatureNotValidMockupTest extends TestCase {
     private static final String BATATA = "batata";
     private PwdManagerClient pwdManagerClient;
     private ServerCallsInvalidServersSignatureMockup server;
@@ -35,7 +36,7 @@ public class ServersSignatureNotValidMockupTest {
     }
 
     @Test(expected = ServersSignatureNotValidException.class)
-    public void ServersSignatureNotValidTest() throws RemoteServerInvalidResponseException {
+    public void testServersSignatureNotValid() throws RemoteServerInvalidResponseException {
 
         pwdManagerClient.save_password("youtube.com", "unicornio", "arcoiris");
         String pwd = pwdManagerClient.retrieve_password("youtube.com", "unicornio");
