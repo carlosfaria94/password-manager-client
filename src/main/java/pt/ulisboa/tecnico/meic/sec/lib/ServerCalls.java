@@ -2,6 +2,7 @@ package pt.ulisboa.tecnico.meic.sec.lib;
 
 import com.google.gson.Gson;
 import okhttp3.*;
+import pt.ulisboa.tecnico.meic.sec.lib.exception.RemoteServerInvalidResponseException;
 
 import java.io.IOException;
 
@@ -14,7 +15,7 @@ public class ServerCalls {
     private static final String API_BASE_URL = "http://localhost:8080";
 
     private OkHttpClient client = new OkHttpClient();
-    private Gson json = new Gson();
+    protected Gson json = new Gson();
 
     /**
      * Register user in the server
@@ -23,7 +24,7 @@ public class ServerCalls {
      * @return - null when user is not successful registered
      * @throws IOException
      */
-    public User register(User user) throws IOException {
+    public User register(User user) throws IOException, RemoteServerInvalidResponseException {
         RequestBody body = RequestBody.create(JSON, json.toJson(user));
         Request request = new Request.Builder()
                 .url(API_BASE_URL + "/")
@@ -44,7 +45,7 @@ public class ServerCalls {
                 default: System.out.println("User not registered.");
                 break;
             }
-            return null;
+            throw new RemoteServerInvalidResponseException();
         }
     }
 
@@ -55,7 +56,7 @@ public class ServerCalls {
      * @return
      * @throws IOException
      */
-    public Password putPassword(Password pwd) throws IOException {
+    public Password putPassword(Password pwd) throws IOException, RemoteServerInvalidResponseException {
         RequestBody body = RequestBody.create(JSON, json.toJson(pwd));
         Request request = new Request.Builder()
                 .url(API_BASE_URL + "/password")
@@ -69,11 +70,11 @@ public class ServerCalls {
             return newPassword;
         } else {
             System.out.println("Password not registered. HTTP Code: " + response.code());
-            return null;
+            throw new RemoteServerInvalidResponseException();
         }
     }
 
-    public Password retrievePassword(Password pwd) throws IOException {
+    public Password retrievePassword(Password pwd) throws IOException, RemoteServerInvalidResponseException {
         String input = json.toJson(pwd);
 
         RequestBody body = RequestBody.create(JSON, input);
@@ -89,7 +90,7 @@ public class ServerCalls {
             return pwdRetrieved;
         } else {
             System.out.println("Password not retrieved. HTTP Code: " + response.code());
-            return null;
+            throw new RemoteServerInvalidResponseException();
         }
     }
 }

@@ -4,6 +4,7 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import pt.ulisboa.tecnico.meic.sec.CryptoManager;
 import pt.ulisboa.tecnico.meic.sec.CryptoUtilities;
 import pt.ulisboa.tecnico.meic.sec.lib.exception.MessageNotFreshException;
+import pt.ulisboa.tecnico.meic.sec.lib.exception.RemoteServerInvalidResponseException;
 import pt.ulisboa.tecnico.meic.sec.lib.exception.ServersIntegrityException;
 import pt.ulisboa.tecnico.meic.sec.lib.exception.ServersSignatureNotValidException;
 
@@ -19,7 +20,7 @@ import java.sql.Timestamp;
 import java.util.Map;
 import java.util.TreeMap;
 
-public final class PwdManagerClient {
+public class PwdManagerClient {
 
     private static final int BYTES_IV = 16;
     private static final String IV_HASH_DAT = "ivhash.dat";
@@ -51,7 +52,13 @@ public final class PwdManagerClient {
         loadIvs();
     }
 
-    public void register_user(){
+    public void init(KeyStore keyStore, String asymAlias, char[] asymPwd, String symAlias, char[] symPwd, ServerCalls serverCalls) throws NoSuchAlgorithmException {
+        init(keyStore, asymAlias, asymPwd, symAlias, symPwd);
+        call = serverCalls;
+        ivMap = new TreeMap<>();
+    }
+
+    public void register_user() throws RemoteServerInvalidResponseException {
         PublicKey publicKey = null;
         try {
             publicKey = CryptoUtilities.getPublicKeyFromKeystore(keyStore, asymAlias, asymPwd);
@@ -65,7 +72,7 @@ public final class PwdManagerClient {
         }
     }
 
-    public void save_password(String domain, String username, String password){
+    public void save_password(String domain, String username, String password) throws RemoteServerInvalidResponseException {
         try {
             PublicKey publicKey = CryptoUtilities.getPublicKeyFromKeystore(keyStore, asymAlias, asymPwd);
             String[] encryptedStuff = encryptFields(domain, username, password);
@@ -91,13 +98,16 @@ public final class PwdManagerClient {
             );
 
             call.putPassword(pwdToRegister);
-        }catch (Exception e){
+        } catch (InvalidKeyException | InvalidAlgorithmParameterException | KeyStoreException |
+                NoSuchAlgorithmException | UnrecoverableKeyException | SignatureException |
+                IllegalBlockSizeException | BadPaddingException | NoSuchPaddingException |
+                IOException e) {
             e.printStackTrace();
             System.err.println(e.getMessage());
         }
     }
 
-    public String retrieve_password(String domain, String username){
+    public String retrieve_password(String domain, String username) throws RemoteServerInvalidResponseException {
         String decryptedPwd = "";
         try {
             PublicKey publicKey = CryptoUtilities.getPublicKeyFromKeystore(keyStore, asymAlias, asymPwd);
@@ -133,8 +143,10 @@ public final class PwdManagerClient {
                     retrieveIV(domain, username),
                     Cipher.DECRYPT_MODE);
             decryptedPwd = new String(decryptedBytes);
-
-        }catch (Exception e){
+        } catch (InvalidKeyException | InvalidAlgorithmParameterException | KeyStoreException |
+                NoSuchAlgorithmException | UnrecoverableKeyException | SignatureException |
+                InvalidKeySpecException | IllegalBlockSizeException | BadPaddingException |
+                NoSuchPaddingException | IOException e) {
             e.printStackTrace();
             System.err.println(e.getMessage());
         }
@@ -151,10 +163,6 @@ public final class PwdManagerClient {
             }
         });
         t.start();
-        // cute as fck :D TODO delete this when release
-        for(Map.Entry<ImmutablePair<String,String>, byte[]> entry : ivMap.entrySet()){
-            System.out.println(entry);
-        }
         keyStore = null;
         asymAlias = null;
         asymPwd = null;
@@ -165,6 +173,11 @@ public final class PwdManagerClient {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+    }
+
+    //Necessary to Mockup
+    protected void setServerCalls(ServerCalls serverCalls){
+        this.call = serverCalls;
     }
 
     private byte[] signFields(String[] fieldsToSend) throws NoSuchAlgorithmException, InvalidKeyException, SignatureException, UnrecoverableKeyException, KeyStoreException {
@@ -260,5 +273,4 @@ public final class PwdManagerClient {
             ivMap = new TreeMap<>();
         }
     }
-
 }

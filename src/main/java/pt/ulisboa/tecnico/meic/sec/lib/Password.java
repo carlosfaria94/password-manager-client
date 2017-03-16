@@ -2,14 +2,14 @@ package pt.ulisboa.tecnico.meic.sec.lib;
 
 public class Password {
 
-    private String publicKey;
-    private String domain;
-    private String username;
-    private String password;
-    private String pwdSignature;
-    private String timestamp;
-    private String nonce;
-    private String reqSignature;
+    protected String publicKey;
+    protected String domain;
+    protected String username;
+    protected String password;
+    protected String pwdSignature;
+    protected String timestamp;
+    protected String nonce;
+    protected String reqSignature;
 
     public Password(String publicKey, String domain, String username, String password, String pwdSignature, String timestamp, String nonce, String reqSignature) {
         this.publicKey = publicKey;

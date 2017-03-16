@@ -4,6 +4,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import pt.ulisboa.tecnico.meic.sec.CryptoUtilities;
+import pt.ulisboa.tecnico.meic.sec.lib.exception.RemoteServerInvalidResponseException;
 
 import java.io.IOException;
 import java.security.KeyStore;
@@ -17,12 +18,12 @@ import static org.junit.Assert.assertEquals;
 public class PwdManagerClientTest {
     private static final String BATATA = "batata";
     private PwdManagerClient pwdManagerClient;
-
-
+    private ServerCalls serverCalls =  new ServerCalls();
 
     @Before
-    public void setUp() throws CertificateException, NoSuchAlgorithmException, KeyStoreException, IOException {
+    public void setUp() throws CertificateException, NoSuchAlgorithmException, KeyStoreException, IOException, RemoteServerInvalidResponseException {
         pwdManagerClient = new PwdManagerClient();
+
         KeyStore ks = CryptoUtilities.readKeystoreFile("keystore.jceks", BATATA.toCharArray());
         pwdManagerClient.init(ks, "asymm", BATATA.toCharArray(), "symm", BATATA.toCharArray());
         pwdManagerClient.register_user();
@@ -34,7 +35,7 @@ public class PwdManagerClientTest {
     }
 
     @Test
-    public void testSimpleSave() {
+    public void testSimpleSave() throws RemoteServerInvalidResponseException    {
         pwdManagerClient.save_password("youtube.com", "unicornio", "arcoiris");
         String pwd = pwdManagerClient.retrieve_password("youtube.com", "unicornio");
         System.out.println(pwd);
@@ -42,14 +43,14 @@ public class PwdManagerClientTest {
     }
 
     @Test
-    public void testSimpleRetrieve() {
+    public void testSimpleRetrieve() throws RemoteServerInvalidResponseException {
         String pwd = pwdManagerClient.retrieve_password("youtube.com", "unicornio");
         System.out.println(pwd);
         assertEquals(pwd, "arcoiris");
     }
 
     @Test
-    public void testLoopRetrieve() {
+    public void testLoopRetrieve() throws RemoteServerInvalidResponseException {
         for(int i = 0 ; i < 4 ; i++) {
             String pwd = pwdManagerClient.retrieve_password("youtube.com", "unicornio");
             System.out.println(pwd);
@@ -58,7 +59,7 @@ public class PwdManagerClientTest {
     }
 
     @Test
-    public void testSaveSamePasswordDifferentDomainAndUser() {
+    public void testSaveSamePasswordDifferentDomainAndUser() throws RemoteServerInvalidResponseException {
         final String password = "mississippi";
         pwdManagerClient.save_password("facebook.com", "tomsawyer", password);
         pwdManagerClient.save_password("fenix.ist.utl.pt", "huckleberry_finn", password);
@@ -72,7 +73,7 @@ public class PwdManagerClientTest {
     }
 
     @Test
-    public void testSaveSameUserAndPassword() {
+    public void testSaveSameUserAndPassword() throws RemoteServerInvalidResponseException {
         final String password = "pokemon-master";
         pwdManagerClient.save_password("pokedex.org", "ash", password);
         pwdManagerClient.save_password("pokecenter.net", "ash", password);
@@ -86,7 +87,7 @@ public class PwdManagerClientTest {
     }
 
     @Test
-    public void testSaveSameDomain() {
+    public void testSaveSameDomain() throws RemoteServerInvalidResponseException {
         final String password = "portugal";
         pwdManagerClient.save_password("supersecret.portugal.pt", "batatinha", password);
         pwdManagerClient.save_password("supersecret.portugal.pt", "companhia", password);
@@ -100,7 +101,7 @@ public class PwdManagerClientTest {
     }
 
     @Test
-    public void testUpdatePassword() {
+    public void testUpdatePassword() throws RemoteServerInvalidResponseException {
         final String password = "sec";
         pwdManagerClient.save_password("youtube.com", "ist", password);
         String pwd = pwdManagerClient.retrieve_password("youtube.com", "ist");
@@ -110,11 +111,5 @@ public class PwdManagerClientTest {
         String pwd2 = pwdManagerClient.retrieve_password("youtube.com", "ist");
         System.out.println(pwd2);
         assertEquals(pwd2, password + "123");
-    }
-
-
-    @Test
-    public void doNothing(){
-        // Just to run setUp and tearDown
     }
 }
