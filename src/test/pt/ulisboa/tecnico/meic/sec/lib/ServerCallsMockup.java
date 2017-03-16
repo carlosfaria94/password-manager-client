@@ -33,7 +33,7 @@ public class ServerCallsMockup extends ServerCalls {
     @Override
     public Password putPassword(Password pwd) {
         passwords.put(pwd.getDomain()+pwd.getUsername(), pwd.getPassword());
-        passwords.put(pwd.getDomain()+pwd.getUsername(), pwd.getPwdSignature());
+        pwdSignatures.put(pwd.getDomain()+pwd.getUsername(), pwd.getPwdSignature());
         try {
             String[] fieldsToSend = new String[]{
                     cryptoManager.convertBinaryToBase64(publicKey.getEncoded()),
@@ -45,7 +45,7 @@ public class ServerCallsMockup extends ServerCalls {
                     cryptoManager.convertBinaryToBase64(cryptoManager.generateNonce(32)),
             };
 
-            pwd = new Password(
+            return new Password(
                     fieldsToSend[0],
                     fieldsToSend[1],
                     fieldsToSend[2],
@@ -55,7 +55,6 @@ public class ServerCallsMockup extends ServerCalls {
                     fieldsToSend[6],
                     cryptoManager.convertBinaryToBase64(signFields(fieldsToSend))
             );
-            return pwd;
         } catch (NoSuchAlgorithmException | InvalidKeyException | SignatureException e) {
             e.printStackTrace();
             return null;

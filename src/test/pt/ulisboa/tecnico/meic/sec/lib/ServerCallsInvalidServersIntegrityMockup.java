@@ -27,11 +27,9 @@ public class ServerCallsInvalidServersIntegrityMockup extends ServerCallsMockup 
             };
 
             //Tamper password
-            byte[] password = cryptoManager.convertBase64ToBinary(fieldsToSend[3]);
-            password[1] = 0x0;
-            fieldsToSend[3] = cryptoManager.convertBinaryToBase64(password);
+            fieldsToSend[3] = fieldsToSend[3].replace(fieldsToSend[3].charAt(1), 'A');
 
-            pwd = new Password(
+            return new Password(
                     fieldsToSend[0],
                     fieldsToSend[1],
                     fieldsToSend[2],
@@ -41,7 +39,6 @@ public class ServerCallsInvalidServersIntegrityMockup extends ServerCallsMockup 
                     fieldsToSend[6],
                     cryptoManager.convertBinaryToBase64(signFields(fieldsToSend))
             );
-            return pwd;
         } catch (NoSuchAlgorithmException | InvalidKeyException | SignatureException e) {
             e.printStackTrace();
             return null;

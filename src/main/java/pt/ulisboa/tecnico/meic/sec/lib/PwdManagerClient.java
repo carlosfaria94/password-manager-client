@@ -47,12 +47,12 @@ public class PwdManagerClient {
         this.symPwd = symPwd;
         call = new ServerCalls();
         cryptoManager = new CryptoManager();
-        //lastIV = new byte[BYTES_IV];
-        //getIvReady();
         loadIvs();
     }
 
-    public void init(KeyStore keyStore, String asymAlias, char[] asymPwd, String symAlias, char[] symPwd, ServerCalls serverCalls) throws NoSuchAlgorithmException {
+
+    // Only for JUnit
+    void init(KeyStore keyStore, String asymAlias, char[] asymPwd, String symAlias, char[] symPwd, ServerCalls serverCalls) throws NoSuchAlgorithmException {
         init(keyStore, asymAlias, asymPwd, symAlias, symPwd);
         call = serverCalls;
         ivMap = new TreeMap<>();
@@ -65,9 +65,7 @@ public class PwdManagerClient {
             String publicKeyB64 = cryptoManager.convertBinaryToBase64(publicKey.getEncoded());
             User user = new User(publicKeyB64, cryptoManager.convertBinaryToBase64(signFields(new String[]{publicKeyB64})));
             call.register(user);
-        } catch (UnrecoverableKeyException | NoSuchAlgorithmException | KeyStoreException | InvalidKeyException | SignatureException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
+        } catch (UnrecoverableKeyException | NoSuchAlgorithmException | KeyStoreException | InvalidKeyException | SignatureException | IOException e) {
             e.printStackTrace();
         }
     }
