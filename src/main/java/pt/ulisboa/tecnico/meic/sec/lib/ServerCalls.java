@@ -45,7 +45,8 @@ public class ServerCalls {
                 default: System.out.println("User not registered.");
                 break;
             }
-            throw new RemoteServerInvalidResponseException();
+            //throw new RemoteServerInvalidResponseException();
+            return null;
         }
     }
 
