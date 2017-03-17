@@ -65,7 +65,7 @@ public class PwdManagerClient {
             String publicKeyB64 = cryptoManager.convertBinaryToBase64(publicKey.getEncoded());
             User user = new User(publicKeyB64, cryptoManager.convertBinaryToBase64(signFields(new String[]{publicKeyB64})));
             call.register(user);
-        } catch (UnrecoverableKeyException | NoSuchAlgorithmException | KeyStoreException | InvalidKeyException | SignatureException | IOException e) {
+        } catch (RemoteServerInvalidResponseException | UnrecoverableKeyException | NoSuchAlgorithmException | KeyStoreException | InvalidKeyException | SignatureException | IOException e) {
             e.printStackTrace();
         }
     }
