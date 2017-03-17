@@ -40,14 +40,12 @@ public class PwdManagerClientTest extends TestCase {
     public void testSimpleSave() throws RemoteServerInvalidResponseException, ServersIntegrityException, ServersSignatureNotValidException    {
         pwdManagerClient.save_password("youtube.com", "unicornio", "arcoiris");
         String pwd = pwdManagerClient.retrieve_password("youtube.com", "unicornio");
-        System.out.println(pwd);
         assertEquals(pwd, "arcoiris");
     }
 
     @Test
     public void testSimpleRetrieve() throws RemoteServerInvalidResponseException, ServersIntegrityException, ServersSignatureNotValidException {
         String pwd = pwdManagerClient.retrieve_password("youtube.com", "unicornio");
-        System.out.println(pwd);
         assertEquals(pwd, "arcoiris");
     }
 
@@ -55,7 +53,6 @@ public class PwdManagerClientTest extends TestCase {
     public void testLoopRetrieve() throws RemoteServerInvalidResponseException, ServersIntegrityException, ServersSignatureNotValidException {
         for(int i = 0 ; i < 4 ; i++) {
             String pwd = pwdManagerClient.retrieve_password("youtube.com", "unicornio");
-            System.out.println(pwd);
             assertEquals(pwd, "arcoiris");
         }
     }
@@ -67,10 +64,8 @@ public class PwdManagerClientTest extends TestCase {
         pwdManagerClient.save_password("fenix.ist.utl.pt", "huckleberry_finn", password);
 
         String pwd = pwdManagerClient.retrieve_password("facebook.com", "tomsawyer");
-        System.out.println(pwd);
         assertEquals(pwd, password);
         String pwd2 = pwdManagerClient.retrieve_password("fenix.ist.utl.pt", "huckleberry_finn");
-        System.out.println(pwd2);
         assertEquals(pwd2, password);
     }
 
@@ -81,10 +76,8 @@ public class PwdManagerClientTest extends TestCase {
         pwdManagerClient.save_password("pokecenter.net", "ash", password);
 
         String pwd = pwdManagerClient.retrieve_password("pokedex.org", "ash");
-        System.out.println(pwd);
         assertEquals(pwd, password);
         String pwd2 = pwdManagerClient.retrieve_password("pokecenter.net", "ash");
-        System.out.println(pwd2);
         assertEquals(pwd2, password);
     }
 
@@ -95,10 +88,8 @@ public class PwdManagerClientTest extends TestCase {
         pwdManagerClient.save_password("supersecret.portugal.pt", "companhia", password);
 
         String pwd = pwdManagerClient.retrieve_password("supersecret.portugal.pt", "batatinha");
-        System.out.println(pwd);
         assertEquals(pwd, password);
         String pwd2 = pwdManagerClient.retrieve_password("supersecret.portugal.pt", "companhia");
-        System.out.println(pwd2);
         assertEquals(pwd2, password);
     }
 
@@ -107,11 +98,9 @@ public class PwdManagerClientTest extends TestCase {
         final String password = "sec";
         pwdManagerClient.save_password("youtube.com", "ist", password);
         String pwd = pwdManagerClient.retrieve_password("youtube.com", "ist");
-        System.out.println(pwd);
         assertEquals(pwd, password);
         pwdManagerClient.save_password("youtube.com", "ist", password + "123");
         String pwd2 = pwdManagerClient.retrieve_password("youtube.com", "ist");
-        System.out.println(pwd2);
         assertEquals(pwd2, password + "123");
     }
 }
