@@ -7,6 +7,7 @@ import org.junit.Test;
 import pt.ulisboa.tecnico.meic.sec.CryptoUtilities;
 import pt.ulisboa.tecnico.meic.sec.lib.exception.RemoteServerInvalidResponseException;
 import pt.ulisboa.tecnico.meic.sec.lib.exception.ServersIntegrityException;
+import pt.ulisboa.tecnico.meic.sec.lib.exception.ServersSignatureNotValidException;
 
 import java.io.IOException;
 import java.security.*;
@@ -37,6 +38,12 @@ public class ServersIntegrityNotValidMockupTest extends TestCase {
     public void testServersIntegrityNotValid() throws RemoteServerInvalidResponseException {
 
         pwdManagerClient.save_password("youtube.com", "unicornio", "arcoiris");
-        String pwd = pwdManagerClient.retrieve_password("youtube.com", "unicornio");
+        try {
+            String pwd = pwdManagerClient.retrieve_password("youtube.com", "unicornio");
+            fail("Devia falhar aqui");
+        } catch (ServersIntegrityException e) {
+        } catch (ServersSignatureNotValidException e) {
+            fail("Devia falhar aqui");
+        }
     }
 }

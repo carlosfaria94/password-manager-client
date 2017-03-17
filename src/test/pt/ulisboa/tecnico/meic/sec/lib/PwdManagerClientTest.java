@@ -6,6 +6,8 @@ import org.junit.Before;
 import org.junit.Test;
 import pt.ulisboa.tecnico.meic.sec.CryptoUtilities;
 import pt.ulisboa.tecnico.meic.sec.lib.exception.RemoteServerInvalidResponseException;
+import pt.ulisboa.tecnico.meic.sec.lib.exception.ServersIntegrityException;
+import pt.ulisboa.tecnico.meic.sec.lib.exception.ServersSignatureNotValidException;
 
 import java.io.IOException;
 import java.security.KeyStore;
@@ -35,7 +37,7 @@ public class PwdManagerClientTest extends TestCase {
     }
 
     @Test
-    public void testSimpleSave() throws RemoteServerInvalidResponseException    {
+    public void testSimpleSave() throws RemoteServerInvalidResponseException, ServersIntegrityException, ServersSignatureNotValidException    {
         pwdManagerClient.save_password("youtube.com", "unicornio", "arcoiris");
         String pwd = pwdManagerClient.retrieve_password("youtube.com", "unicornio");
         System.out.println(pwd);
@@ -43,14 +45,14 @@ public class PwdManagerClientTest extends TestCase {
     }
 
     @Test
-    public void testSimpleRetrieve() throws RemoteServerInvalidResponseException {
+    public void testSimpleRetrieve() throws RemoteServerInvalidResponseException, ServersIntegrityException, ServersSignatureNotValidException {
         String pwd = pwdManagerClient.retrieve_password("youtube.com", "unicornio");
         System.out.println(pwd);
         assertEquals(pwd, "arcoiris");
     }
 
     @Test
-    public void testLoopRetrieve() throws RemoteServerInvalidResponseException {
+    public void testLoopRetrieve() throws RemoteServerInvalidResponseException, ServersIntegrityException, ServersSignatureNotValidException {
         for(int i = 0 ; i < 4 ; i++) {
             String pwd = pwdManagerClient.retrieve_password("youtube.com", "unicornio");
             System.out.println(pwd);
@@ -59,7 +61,7 @@ public class PwdManagerClientTest extends TestCase {
     }
 
     @Test
-    public void testSaveSamePasswordDifferentDomainAndUser() throws RemoteServerInvalidResponseException {
+    public void testSaveSamePasswordDifferentDomainAndUser() throws RemoteServerInvalidResponseException, ServersIntegrityException, ServersSignatureNotValidException {
         final String password = "mississippi";
         pwdManagerClient.save_password("facebook.com", "tomsawyer", password);
         pwdManagerClient.save_password("fenix.ist.utl.pt", "huckleberry_finn", password);
@@ -73,7 +75,7 @@ public class PwdManagerClientTest extends TestCase {
     }
 
     @Test
-    public void testSaveSameUserAndPassword() throws RemoteServerInvalidResponseException {
+    public void testSaveSameUserAndPassword() throws RemoteServerInvalidResponseException, ServersIntegrityException, ServersSignatureNotValidException {
         final String password = "pokemon-master";
         pwdManagerClient.save_password("pokedex.org", "ash", password);
         pwdManagerClient.save_password("pokecenter.net", "ash", password);
@@ -87,7 +89,7 @@ public class PwdManagerClientTest extends TestCase {
     }
 
     @Test
-    public void testSaveSameDomain() throws RemoteServerInvalidResponseException {
+    public void testSaveSameDomain() throws RemoteServerInvalidResponseException, ServersIntegrityException, ServersSignatureNotValidException {
         final String password = "portugal";
         pwdManagerClient.save_password("supersecret.portugal.pt", "batatinha", password);
         pwdManagerClient.save_password("supersecret.portugal.pt", "companhia", password);
@@ -101,7 +103,7 @@ public class PwdManagerClientTest extends TestCase {
     }
 
     @Test
-    public void testUpdatePassword() throws RemoteServerInvalidResponseException {
+    public void testUpdatePassword() throws RemoteServerInvalidResponseException, ServersIntegrityException, ServersSignatureNotValidException {
         final String password = "sec";
         pwdManagerClient.save_password("youtube.com", "ist", password);
         String pwd = pwdManagerClient.retrieve_password("youtube.com", "ist");

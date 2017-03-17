@@ -3,7 +3,7 @@ package pt.ulisboa.tecnico.meic.sec.lib.exception;
 /**
  * Created by francisco on 13/03/2017.
  */
-public class ServersIntegrityException extends RuntimeException
+public class ServersIntegrityException extends Exception
 {
     @Override
     public String getMessage() {

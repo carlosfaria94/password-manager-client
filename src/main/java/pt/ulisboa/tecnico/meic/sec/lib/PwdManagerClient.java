@@ -105,7 +105,7 @@ public class PwdManagerClient {
         }
     }
 
-    public String retrieve_password(String domain, String username) throws RemoteServerInvalidResponseException {
+    public String retrieve_password(String domain, String username) throws RemoteServerInvalidResponseException, ServersIntegrityException, ServersSignatureNotValidException {
         String decryptedPwd = "";
         try {
             PublicKey publicKey = CryptoUtilities.getPublicKeyFromKeystore(keyStore, asymAlias, asymPwd);
@@ -223,22 +223,22 @@ public class PwdManagerClient {
         boolean validTime = cryptoManager.isTimestampAndNonceValid(Timestamp.valueOf(retrieved.getTimestamp()),
                                                 cryptoManager.convertBase64ToBinary(retrieved.getNonce()));
         if(!validTime) {
-            System.out.println("Message not fresh!");
+            //System.out.println("Message not fresh!");
             throw new MessageNotFreshException();
         }
     }
 
-    private void verifyServersIntegrity(PublicKey publicKey, Password retrieved) throws NoSuchAlgorithmException, InvalidKeyException, SignatureException {
+    private void verifyServersIntegrity(PublicKey publicKey, Password retrieved) throws NoSuchAlgorithmException, InvalidKeyException, SignatureException, ServersIntegrityException {
         // Check tampering
         String[] myFields = new String[]{retrieved.getDomain(), retrieved.getUsername(), retrieved.getPassword()};
         boolean validSig = isValidSig(publicKey, myFields, retrieved.getPwdSignature());
         if(!validSig){
-            System.out.println("Content tampered with!");
+            //System.out.println("Content tampered with!");
             throw new ServersIntegrityException();
         }
     }
 
-    private void verifyServersSignature(Password retrieved) throws InvalidKeySpecException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
+    private void verifyServersSignature(Password retrieved) throws InvalidKeySpecException, NoSuchAlgorithmException, InvalidKeyException, SignatureException, ServersSignatureNotValidException {
         String[] myFields = new String[]{retrieved.getPublicKey(),
                                             retrieved.getDomain(),
                                             retrieved.getUsername(),
@@ -253,7 +253,7 @@ public class PwdManagerClient {
 
         final boolean validSig = isValidSig(serverPublicKey, myFields, retrieved.getReqSignature());
         if(!validSig) {
-            System.out.println("Message not authenticated!");
+            //System.out.println("Message not authenticated!");
             throw new ServersSignatureNotValidException();
         }
     }
