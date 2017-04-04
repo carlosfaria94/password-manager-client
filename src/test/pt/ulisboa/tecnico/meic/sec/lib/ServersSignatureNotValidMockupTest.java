@@ -19,12 +19,12 @@ import static org.junit.Assert.assertEquals;
 public class ServersSignatureNotValidMockupTest extends TestCase {
     private static final String BATATA = "batata";
     private PwdManagerClient pwdManagerClient;
-    private ServerCallsInvalidServersSignatureMockup server;
+    private SingleServerCallsInvalidServersSignatureMockup server;
 
     @Before
     public void setUp() throws CertificateException, NoSuchAlgorithmException, KeyStoreException, IOException, RemoteServerInvalidResponseException, SignatureException, NoSuchProviderException, InvalidKeyException {
         pwdManagerClient = new PwdManagerClient();
-        server = new ServerCallsInvalidServersSignatureMockup();
+        server = new SingleServerCallsInvalidServersSignatureMockup();
 
         KeyStore ks = CryptoUtilities.readKeystoreFile("keystore.jceks", BATATA.toCharArray());
         pwdManagerClient.init(ks, "asymm", BATATA.toCharArray(), "symm", BATATA.toCharArray(), server);

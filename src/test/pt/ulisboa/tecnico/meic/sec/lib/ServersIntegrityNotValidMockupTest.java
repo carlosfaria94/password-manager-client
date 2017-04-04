@@ -17,12 +17,12 @@ import java.security.cert.CertificateException;
 public class ServersIntegrityNotValidMockupTest extends TestCase {
     private static final String BATATA = "batata";
     private PwdManagerClient pwdManagerClient;
-    private ServerCallsInvalidServersIntegrityMockup server;
+    private SingleServerCallsInvalidServersIntegrityMockup server;
 
     @Before
     public void setUp() throws CertificateException, NoSuchAlgorithmException, KeyStoreException, IOException, RemoteServerInvalidResponseException, SignatureException, NoSuchProviderException, InvalidKeyException {
         pwdManagerClient = new PwdManagerClient();
-        server = new ServerCallsInvalidServersIntegrityMockup();
+        server = new SingleServerCallsInvalidServersIntegrityMockup();
 
         KeyStore ks = CryptoUtilities.readKeystoreFile("keystore.jceks", BATATA.toCharArray());
         pwdManagerClient.init(ks, "asymm", BATATA.toCharArray(), "symm", BATATA.toCharArray(), server);

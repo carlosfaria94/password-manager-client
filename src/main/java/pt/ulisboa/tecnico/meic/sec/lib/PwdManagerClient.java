@@ -17,7 +17,7 @@ import java.security.*;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
 import java.sql.Timestamp;
-import java.util.Map;
+import java.util.ArrayList;
 import java.util.TreeMap;
 
 public class PwdManagerClient {
@@ -32,8 +32,8 @@ public class PwdManagerClient {
     private transient char[] symPwd;
 
     private TreeMap<ImmutablePair<String,String>, byte[]> ivMap;
-    private ServerCalls call;
     private CryptoManager cryptoManager;
+    private ServerCalls call;
 
     public String helloWorld() {
         return "Hello World. I'm a Password Manager Client";
@@ -45,7 +45,8 @@ public class PwdManagerClient {
         this.asymPwd = asymPwd;
         this.symAlias = symAlias;
         this.symPwd = symPwd;
-        call = new ServerCalls();
+        // Pick type of ServerCalls
+        call = new SingleServerCalls();
         cryptoManager = new CryptoManager();
         loadIvs();
     }

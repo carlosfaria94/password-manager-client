@@ -7,9 +7,9 @@ import java.security.SignatureException;
 /**
  * Created by Bernardo on 16/03/2017.
  */
-public class ServerCallsInvalidServersIntegrityMockup extends ServerCallsMockup {
+public class SingleServerCallsInvalidServersIntegrityMockup extends SingleServerCallsMockup {
 
-    public ServerCallsInvalidServersIntegrityMockup() throws NoSuchAlgorithmException {
+    public SingleServerCallsInvalidServersIntegrityMockup() throws NoSuchAlgorithmException {
         super();
     }
 

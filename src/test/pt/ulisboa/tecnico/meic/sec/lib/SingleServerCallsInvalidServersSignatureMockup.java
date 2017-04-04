@@ -1,15 +1,13 @@
 package pt.ulisboa.tecnico.meic.sec.lib;
 
-import java.io.IOException;
 import java.security.*;
-import java.security.cert.CertificateException;
 
 /**
  * Created by Bernardo on 16/03/2017.
  */
-public class ServerCallsInvalidServersSignatureMockup extends ServerCallsMockup {
+public class SingleServerCallsInvalidServersSignatureMockup extends SingleServerCallsMockup {
 
-    public ServerCallsInvalidServersSignatureMockup() throws NoSuchAlgorithmException {
+    public SingleServerCallsInvalidServersSignatureMockup() throws NoSuchAlgorithmException {
         super();
     }
 

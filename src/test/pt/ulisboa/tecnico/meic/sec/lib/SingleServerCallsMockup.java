@@ -4,7 +4,7 @@ import pt.ulisboa.tecnico.meic.sec.CryptoManager;
 import java.security.*;
 import java.util.HashMap;
 
-public class ServerCallsMockup extends ServerCalls {
+public class SingleServerCallsMockup extends SingleServerCalls {
     protected CryptoManager cryptoManager;
     protected PublicKey publicKey;
     protected PrivateKey privateKey;
@@ -12,7 +12,7 @@ public class ServerCallsMockup extends ServerCalls {
     protected HashMap<String, String> passwords = new HashMap<>();
     protected HashMap<String, String> pwdSignatures = new HashMap<>();
 
-    public ServerCallsMockup() throws NoSuchAlgorithmException {
+    public SingleServerCallsMockup() throws NoSuchAlgorithmException {
         KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
         keyPairGenerator.initialize(2048);
         KeyPair keyPair = keyPairGenerator.genKeyPair();
