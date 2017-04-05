@@ -3,19 +3,28 @@ package pt.ulisboa.tecnico.meic.sec.lib;
 import pt.ulisboa.tecnico.meic.sec.lib.exception.RemoteServerInvalidResponseException;
 
 import java.io.IOException;
-import java.util.ArrayList;
 
 public class ServerCallsPool implements ServerCalls {
 
-    private static final int INITIAL_PORT = 30000;
-    private static final int FINAL_PORT = 30005;
+    private int initialPort = 30000;
+    private int finalPort = 30005;
 
     private SingleServerCalls[] singleServerCalls;
 
+    public ServerCallsPool(int initialPort, int finalPort) {
+        this.initialPort = initialPort;
+        this.finalPort = finalPort;
+        init();
+    }
+
     public ServerCallsPool() {
-        singleServerCalls = new SingleServerCalls[FINAL_PORT - INITIAL_PORT + 1];
+        init();
+    }
+
+    private void init() {
+        singleServerCalls = new SingleServerCalls[finalPort - initialPort + 1];
         for(int i = 0; i < singleServerCalls.length ; i++){
-            singleServerCalls[i] = new SingleServerCalls(INITIAL_PORT + i);
+            singleServerCalls[i] = new SingleServerCalls(initialPort + i);
         }
     }
 
@@ -47,6 +56,9 @@ public class ServerCallsPool implements ServerCalls {
 
         // TODO: CARLOS: Consensus XD
         final int n = singleServerCalls.length;
+        /* If there were more responses than the number of faults we tolerate, than we will proceed
+        *  The expression (2.0 / 3.0) * n - 1.0 / 6.0) is N = 3f + 1 solved in order to F
+        */
         if(countNotNull(usersResponses) > (2.0 / 3.0) * n - 1.0 / 6.0){
             //if assinado
                 // return
