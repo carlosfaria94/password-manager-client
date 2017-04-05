@@ -48,7 +48,7 @@ public class PwdManagerClient {
 
         // Pick type of ServerCalls
         call = new SingleServerCalls();
-        //1call = new ServerCallsPool();
+        call = new ServerCallsPool();
 
         cryptoManager = new CryptoManager();
         loadIvs();
