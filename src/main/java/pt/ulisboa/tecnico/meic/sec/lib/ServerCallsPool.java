@@ -10,23 +10,25 @@ public class ServerCallsPool implements ServerCalls {
     private static final int INITIAL_PORT = 30000;
     private static final int FINAL_PORT = 30005;
 
-    private ArrayList<ServerCalls> listCalls;
+    private SingleServerCalls[] singleServerCalls;
 
     public ServerCallsPool() {
-        listCalls = new ArrayList<>();
-        for(int i = INITIAL_PORT; i < FINAL_PORT ; i++){
-            listCalls.add(new SingleServerCalls(i));
+        singleServerCalls = new SingleServerCalls[FINAL_PORT - INITIAL_PORT + 1];
+        for(int i = 0; i < singleServerCalls.length ; i++){
+            singleServerCalls[i] = new SingleServerCalls(INITIAL_PORT + i);
         }
     }
 
     @Override
     public User register(User user) throws IOException, RemoteServerInvalidResponseException {
-        Thread[] threads = new Thread[listCalls.size()];
-        for(int i = 0 ; i < listCalls.size() || i < threads.length ; i++){
+        Thread[] threads = new Thread[singleServerCalls.length];
+        User[] usersResponses = new User[singleServerCalls.length];
+
+        for(int i = 0; i < singleServerCalls.length || i < threads.length ; i++){
             int finalI = i;
             threads[i] = new Thread(() -> {
                 try {
-                    listCalls.get(finalI).register(user);
+                    usersResponses[finalI] = singleServerCalls[finalI].register(user);
                 } catch (IOException | RemoteServerInvalidResponseException e) {
                     e.printStackTrace();
                 }
@@ -35,9 +37,6 @@ public class ServerCallsPool implements ServerCalls {
         for(Thread thread : threads){
             thread.start();
         }
-
-        // Some consensus code here
-
         for(Thread thread : threads){
             try {
                 thread.join();
@@ -45,17 +44,34 @@ public class ServerCallsPool implements ServerCalls {
                 e.printStackTrace();
             }
         }
-        return null;
+
+        // TODO: CARLOS: Consensus XD
+        final int n = singleServerCalls.length;
+        if(countNotNull(usersResponses) > (2.0 / 3.0) * n - 1.0 / 6.0){
+            //if assinado
+                // return
+        }
+
+        // JAJAO
+        throw new RuntimeException("JAJAO");
+    }
+
+    private int countNotNull(Object[] array){
+        int count = 0;
+        for(Object o : array){
+            if(o != null) count++;
+        }
+        return count;
     }
 
     @Override
     public Password putPassword(Password pwd) throws IOException, RemoteServerInvalidResponseException {
-        Thread[] threads = new Thread[listCalls.size()];
-        for(int i = 0 ; i < listCalls.size() || i < threads.length ; i++){
+        Thread[] threads = new Thread[singleServerCalls.length];
+        for(int i = 0; i < singleServerCalls.length || i < threads.length ; i++){
             int finalI = i;
             threads[i] = new Thread(() -> {
                 try {
-                    listCalls.get(finalI).putPassword(pwd);
+                    singleServerCalls[finalI].putPassword(pwd);
                 } catch (IOException | RemoteServerInvalidResponseException e) {
                     e.printStackTrace();
                 }
@@ -79,12 +95,12 @@ public class ServerCallsPool implements ServerCalls {
 
     @Override
     public Password retrievePassword(Password pwd) throws IOException, RemoteServerInvalidResponseException {
-        Thread[] threads = new Thread[listCalls.size()];
-        for(int i = 0 ; i < listCalls.size() || i < threads.length ; i++){
+        Thread[] threads = new Thread[singleServerCalls.length];
+        for(int i = 0; i < singleServerCalls.length || i < threads.length ; i++){
             int finalI = i;
             threads[i] = new Thread(() -> {
                 try {
-                    listCalls.get(finalI).retrievePassword(pwd);
+                    singleServerCalls[finalI].retrievePassword(pwd);
                 } catch (IOException | RemoteServerInvalidResponseException e) {
                     e.printStackTrace();
                 }

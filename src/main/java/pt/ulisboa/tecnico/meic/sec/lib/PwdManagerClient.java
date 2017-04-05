@@ -45,8 +45,11 @@ public class PwdManagerClient {
         this.asymPwd = asymPwd;
         this.symAlias = symAlias;
         this.symPwd = symPwd;
+
         // Pick type of ServerCalls
         call = new SingleServerCalls();
+        call = new ServerCallsPool();
+
         cryptoManager = new CryptoManager();
         loadIvs();
     }
