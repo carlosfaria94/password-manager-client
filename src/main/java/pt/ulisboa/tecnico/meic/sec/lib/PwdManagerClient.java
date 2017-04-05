@@ -48,7 +48,7 @@ public class PwdManagerClient {
 
         // Pick type of ServerCalls
         call = new SingleServerCalls();
-        call = new ServerCallsPool();
+        //1call = new ServerCallsPool();
 
         cryptoManager = new CryptoManager();
         loadIvs();
@@ -85,7 +85,7 @@ public class PwdManagerClient {
                     encryptedStuff[1], // username
                     encryptedStuff[2], // password
                     cryptoManager.convertBinaryToBase64(signFields(encryptedStuff)),
-                    cryptoManager.getActualTimestamp().toString(),
+                    String.valueOf(cryptoManager.getActualTimestamp().getTime()),
                     cryptoManager.convertBinaryToBase64(cryptoManager.generateNonce(32)),
             };
             Password pwdToRegister = new Password(
@@ -120,7 +120,7 @@ public class PwdManagerClient {
                     encryptedStuff[0], // domain
                     encryptedStuff[1], // username
                     cryptoManager.convertBinaryToBase64(signFields(encryptedStuff)),
-                    cryptoManager.getActualTimestamp().toString(),
+                    String.valueOf(cryptoManager.getActualTimestamp().getTime()),
                     cryptoManager.convertBinaryToBase64(cryptoManager.generateNonce(32)),
             };
 
@@ -224,7 +224,7 @@ public class PwdManagerClient {
 
     private void verifyFreshness(Password retrieved) {
         // Check Freshness
-        boolean validTime = cryptoManager.isTimestampAndNonceValid(Timestamp.valueOf(retrieved.getTimestamp()),
+        boolean validTime = cryptoManager.isTimestampAndNonceValid(new Timestamp(Long.valueOf(retrieved.getTimestamp())),
                                                 cryptoManager.convertBase64ToBinary(retrieved.getNonce()));
         if(!validTime) {
             //System.out.println("Message not fresh!");
