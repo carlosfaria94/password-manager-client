@@ -1,13 +1,19 @@
 package pt.ulisboa.tecnico.meic.sec.lib;
 
+import pt.ulisboa.tecnico.meic.sec.CryptoManager;
 import pt.ulisboa.tecnico.meic.sec.lib.exception.RemoteServerInvalidResponseException;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
 
 public class ServerCallsPool implements ServerCalls {
 
     private int initialPort = 30000;
     private int finalPort = 30005;
+
+    private CryptoManager cryptoManager;
 
     private SingleServerCalls[] singleServerCalls;
 
@@ -33,7 +39,7 @@ public class ServerCallsPool implements ServerCalls {
         Thread[] threads = new Thread[singleServerCalls.length];
         User[] usersResponses = new User[singleServerCalls.length];
 
-        for(int i = 0; i < singleServerCalls.length || i < threads.length ; i++){
+        for (int i = 0; i < singleServerCalls.length || i < threads.length; i++) {
             int finalI = i;
             threads[i] = new Thread(() -> {
                 try {
@@ -43,10 +49,10 @@ public class ServerCallsPool implements ServerCalls {
                 }
             });
         }
-        for(Thread thread : threads){
+        for (Thread thread : threads) {
             thread.start();
         }
-        for(Thread thread : threads){
+        for (Thread thread : threads) {
             try {
                 thread.join();
             } catch (InterruptedException e) {
@@ -54,24 +60,50 @@ public class ServerCallsPool implements ServerCalls {
             }
         }
 
-        // TODO: CARLOS: Consensus XD
         final int n = singleServerCalls.length;
         /* If there were more responses than the number of faults we tolerate, than we will proceed
         *  The expression (2.0 / 3.0) * n - 1.0 / 6.0) is N = 3f + 1 solved in order to F
         */
         if(countNotNull(usersResponses) > (2.0 / 3.0) * n - 1.0 / 6.0){
             //if assinado
-                // return
+            // return
+            //PublicKey publicKey = CryptoUtilities.getPublicKeyFromKeystore(keyStore, asymAlias, asymPwd);
+            List<User> failResponses = new ArrayList<>();
+            List<User> goodResponses = new ArrayList<>();
+            for (User userRes : usersResponses) {
+                if (userRes == null) {
+                    failResponses.add(userRes);
+                /*} else if (cryptoManager.isValidSig(publicKey, new String[]{user.getFingerprint()}, userRes.getFingerprint()) {
+                    // Validar o fingerprint devolvido se é um digest da publicKey do client
+                    goodResponses.add(userRes);
+                } else {
+                    failResponses.add(userRes);*/
+                }
+            }
+
+            /*
+             * If we obtain more good responses than fail/bad responses, means that the system is ok, otherwise, we cannot
+             * rely on the system
+             */
+            if (goodResponses.size() > failResponses.size() && goodResponses.size() > (2.0 / 3.0) * n - 1.0 / 6.0) {
+                return goodResponses.get(0);
+            } else {
+                // JAJAO
+                throw new RuntimeException("JAJAO");
+            }
+
+        } else {
+            // JAJAO
+            throw new RuntimeException("JAJAO");
         }
 
-        // JAJAO
-        throw new RuntimeException("JAJAO");
+
     }
 
-    private int countNotNull(Object[] array){
+    private int countNotNull(Object[] array) {
         int count = 0;
-        for(Object o : array){
-            if(o != null) count++;
+        for (Object o : array) {
+            if (o != null) count++;
         }
         return count;
     }
@@ -79,7 +111,7 @@ public class ServerCallsPool implements ServerCalls {
     @Override
     public Password putPassword(Password pwd) throws IOException, RemoteServerInvalidResponseException {
         Thread[] threads = new Thread[singleServerCalls.length];
-        for(int i = 0; i < singleServerCalls.length || i < threads.length ; i++){
+        for (int i = 0; i < singleServerCalls.length || i < threads.length; i++) {
             int finalI = i;
             threads[i] = new Thread(() -> {
                 try {
@@ -89,13 +121,13 @@ public class ServerCallsPool implements ServerCalls {
                 }
             });
         }
-        for(Thread thread : threads){
+        for (Thread thread : threads) {
             thread.start();
         }
 
         // Some consensus code here
 
-        for(Thread thread : threads){
+        for (Thread thread : threads) {
             try {
                 thread.join();
             } catch (InterruptedException e) {
@@ -108,7 +140,7 @@ public class ServerCallsPool implements ServerCalls {
     @Override
     public Password retrievePassword(Password pwd) throws IOException, RemoteServerInvalidResponseException {
         Thread[] threads = new Thread[singleServerCalls.length];
-        for(int i = 0; i < singleServerCalls.length || i < threads.length ; i++){
+        for (int i = 0; i < singleServerCalls.length || i < threads.length; i++) {
             int finalI = i;
             threads[i] = new Thread(() -> {
                 try {
@@ -118,13 +150,13 @@ public class ServerCallsPool implements ServerCalls {
                 }
             });
         }
-        for(Thread thread : threads){
+        for (Thread thread : threads) {
             thread.start();
         }
 
         // Some consensus code here
 
-        for(Thread thread : threads){
+        for (Thread thread : threads) {
             try {
                 thread.join();
             } catch (InterruptedException e) {
