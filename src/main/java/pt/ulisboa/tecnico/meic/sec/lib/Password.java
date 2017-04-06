@@ -6,10 +6,23 @@ public class Password {
     protected String domain;
     protected String username;
     protected String password;
+    protected String version;
     protected String pwdSignature;
     protected String timestamp;
     protected String nonce;
     protected String reqSignature;
+
+    public Password(String publicKey, String domain, String username, String password, String version, String pwdSignature, String timestamp, String nonce, String reqSignature) {
+        this.publicKey = publicKey;
+        this.domain = domain;
+        this.username = username;
+        this.password = password;
+        this.version = version;
+        this.pwdSignature = pwdSignature;
+        this.timestamp = timestamp;
+        this.nonce = nonce;
+        this.reqSignature = reqSignature;
+    }
 
     public Password(String publicKey, String domain, String username, String password, String pwdSignature, String timestamp, String nonce, String reqSignature) {
         this.publicKey = publicKey;
@@ -30,6 +43,10 @@ public class Password {
         this.timestamp = timestamp;
         this.nonce = nonce;
         this.reqSignature = reqSignature;
+    }
+
+    public String getVersion() {
+        return version;
     }
 
     public String getPublicKey() {
@@ -71,6 +88,7 @@ public class Password {
                 ", domain='" + domain + '\'' +
                 ", username='" + username + '\'' +
                 ", password='" + password + '\'' +
+                ", version='" + version + '\'' +
                 ", pwdSignature='" + pwdSignature + '\'' +
                 ", timestamp='" + timestamp + '\'' +
                 ", nonce='" + nonce + '\'' +

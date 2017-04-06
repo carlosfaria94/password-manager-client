@@ -48,7 +48,7 @@ public class PwdManagerClient {
 
         // Pick type of ServerCalls
         call = new SingleServerCalls();
-        call = new ServerCallsPool();
+        call = new ServerCallsPool(this);
 
         cryptoManager = new CryptoManager();
         loadIvs();
@@ -222,7 +222,7 @@ public class PwdManagerClient {
         return encryptedStuff;
     }
 
-    private void verifyFreshness(Password retrieved) {
+    void verifyFreshness(Password retrieved) {
         // Check Freshness
         boolean validTime = cryptoManager.isTimestampAndNonceValid(new Timestamp(Long.valueOf(retrieved.getTimestamp())),
                                                 cryptoManager.convertBase64ToBinary(retrieved.getNonce()));
@@ -242,7 +242,7 @@ public class PwdManagerClient {
         }
     }
 
-    private void verifyServersSignature(Password retrieved) throws InvalidKeySpecException, NoSuchAlgorithmException, InvalidKeyException, SignatureException, ServersSignatureNotValidException {
+    void verifyServersSignature(Password retrieved) throws InvalidKeySpecException, NoSuchAlgorithmException, InvalidKeyException, SignatureException, ServersSignatureNotValidException {
         String[] myFields = new String[]{retrieved.getPublicKey(),
                                             retrieved.getDomain(),
                                             retrieved.getUsername(),
