@@ -1,6 +1,7 @@
 package pt.ulisboa.tecnico.meic.sec.lib;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.MutablePair;
 import pt.ulisboa.tecnico.meic.sec.CryptoManager;
 import pt.ulisboa.tecnico.meic.sec.CryptoUtilities;
 import pt.ulisboa.tecnico.meic.sec.lib.exception.MessageNotFreshException;
@@ -17,21 +18,21 @@ import java.security.*;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
 import java.sql.Timestamp;
-import java.util.ArrayList;
 import java.util.TreeMap;
 
 public class PwdManagerClient {
 
+    private static final int INITIAL_VERSION = 0;
     private static final int BYTES_IV = 16;
     private static final String IV_HASH_DAT = "ivhash.dat";
-
     private transient KeyStore keyStore;
     private transient String asymAlias;
     private transient char[] asymPwd;
     private transient String symAlias;
     private transient char[] symPwd;
 
-    private TreeMap<ImmutablePair<String,String>, byte[]> ivMap;
+    //private TreeMap<ImmutablePair<String, String>, byte[]> ivMap;
+    private TreeMap<ImmutablePair<String, String>, MutablePair<byte[], Integer>> ivMap;
     private CryptoManager cryptoManager;
     private ServerCalls call;
 
@@ -48,7 +49,7 @@ public class PwdManagerClient {
 
         // Pick type of ServerCalls
         call = new SingleServerCalls();
-        call = new ServerCallsPool(this);
+        //call = new ServerCallsPool(this);
 
         cryptoManager = new CryptoManager();
         loadIvs();
@@ -84,6 +85,7 @@ public class PwdManagerClient {
                     encryptedStuff[0], // domain
                     encryptedStuff[1], // username
                     encryptedStuff[2], // password
+                    encryptedStuff[3], // versionNumber
                     cryptoManager.convertBinaryToBase64(signFields(encryptedStuff)),
                     String.valueOf(cryptoManager.getActualTimestamp().getTime()),
                     cryptoManager.convertBinaryToBase64(cryptoManager.generateNonce(32)),
@@ -96,6 +98,7 @@ public class PwdManagerClient {
                     fieldsToSend[4],
                     fieldsToSend[5],
                     fieldsToSend[6],
+                    fieldsToSend[7],
                     cryptoManager.convertBinaryToBase64(signFields(fieldsToSend))
             );
 
@@ -145,6 +148,7 @@ public class PwdManagerClient {
                     retrieveIV(domain, username),
                     Cipher.DECRYPT_MODE);
             decryptedPwd = new String(decryptedBytes);
+
         } catch (InvalidKeyException | InvalidAlgorithmParameterException | KeyStoreException |
                 NoSuchAlgorithmException | UnrecoverableKeyException | SignatureException |
                 InvalidKeySpecException | IllegalBlockSizeException | BadPaddingException |
@@ -155,12 +159,12 @@ public class PwdManagerClient {
         return decryptedPwd;
     }
 
-    public void close(){
+    public void close() {
         Thread t = new Thread(() -> {
             try (ObjectOutputStream out = new ObjectOutputStream(
-                    new BufferedOutputStream(new FileOutputStream(IV_HASH_DAT)))){
+                    new BufferedOutputStream(new FileOutputStream(IV_HASH_DAT)))) {
                 out.writeObject(ivMap);
-            }catch (IOException ex){
+            } catch (IOException ex) {
                 ex.printStackTrace();
             }
         });
@@ -177,8 +181,8 @@ public class PwdManagerClient {
         }
     }
 
-    //Necessary to Mockup
-    protected void setServerCalls(ServerCalls serverCalls){
+    // Necessary to Mockup
+    protected void setServerCalls(ServerCalls serverCalls) {
         this.call = serverCalls;
     }
 
@@ -187,36 +191,51 @@ public class PwdManagerClient {
     }
 
     private String[] encryptFields(String domain, String username, String password) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidAlgorithmParameterException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException, UnrecoverableKeyException, KeyStoreException {
-        String[] stuff = new String[]{domain, username, password};
-        String[] encryptedStuff = new String[3];
+        byte[] iv = retrieveIV(domain, username); // this initializes the versionNumber if needed.
+        int version = getVersion(domain, username) + 1;
+        setVersion(domain, username, version);
+        String[] stuff = new String[]{domain,
+                                    username,
+                                    password,
+                                    String.valueOf(version)};
+        String[] encryptedStuff = new String[stuff.length];
         for (int i = 0; i < stuff.length && i < encryptedStuff.length; i++) {
             encryptedStuff[i] = cryptoManager.convertBinaryToBase64(
-                            cryptoManager.runAES(stuff[i].getBytes(),
+                    cryptoManager.runAES(stuff[i].getBytes(),
                             CryptoUtilities.getAESKeyFromKeystore(keyStore, symAlias, symPwd),
-                            retrieveIV(domain, username),
+                            iv,
                             Cipher.ENCRYPT_MODE));
         }
         return encryptedStuff;
     }
 
+    private int getVersion(String domain, String username) {
+        return ivMap.get(new ImmutablePair<>(domain, username)).getRight();
+    }
+
+    private void setVersion(String domain, String username, int version) {
+        ivMap.get(new ImmutablePair<>(domain, username)).setRight(version);
+    }
+
     private byte[] retrieveIV(String domain, String username) throws NoSuchAlgorithmException {
         ImmutablePair<String, String> key = new ImmutablePair<>(domain, username);
-        if(ivMap.containsKey(key)) return ivMap.get(key);
+        if (ivMap.containsKey(key)) return ivMap.get(key).getLeft();
         else {
             byte[] iv = cryptoManager.generateIV(BYTES_IV);
-            ivMap.put(key, iv);
+            ivMap.put(key, new MutablePair<>(iv, INITIAL_VERSION));
             return iv;
         }
     }
 
     private String[] encryptFields(String domain, String username) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidAlgorithmParameterException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException, UnrecoverableKeyException, KeyStoreException {
+        byte[] iv = retrieveIV(domain, username);
         String[] stuff = new String[]{domain, username};
-        String[] encryptedStuff = new String[2];
+        String[] encryptedStuff = new String[stuff.length];
         for (int i = 0; i < stuff.length && i < encryptedStuff.length; i++) {
             encryptedStuff[i] = cryptoManager.convertBinaryToBase64(
                     cryptoManager.runAES(stuff[i].getBytes(),
                             CryptoUtilities.getAESKeyFromKeystore(keyStore, symAlias, symPwd),
-                            retrieveIV(domain, username),
+                            iv,
                             Cipher.ENCRYPT_MODE));
         }
         return encryptedStuff;
@@ -225,8 +244,8 @@ public class PwdManagerClient {
     void verifyFreshness(Password retrieved) {
         // Check Freshness
         boolean validTime = cryptoManager.isTimestampAndNonceValid(new Timestamp(Long.valueOf(retrieved.getTimestamp())),
-                                                cryptoManager.convertBase64ToBinary(retrieved.getNonce()));
-        if(!validTime) {
+                cryptoManager.convertBase64ToBinary(retrieved.getNonce()));
+        if (!validTime) {
             //System.out.println("Message not fresh!");
             throw new MessageNotFreshException();
         }
@@ -234,9 +253,10 @@ public class PwdManagerClient {
 
     private void verifyServersIntegrity(PublicKey publicKey, Password retrieved) throws NoSuchAlgorithmException, InvalidKeyException, SignatureException, ServersIntegrityException {
         // Check tampering
-        String[] myFields = new String[]{retrieved.getDomain(), retrieved.getUsername(), retrieved.getPassword()};
+        String[] myFields = new String[]{retrieved.getDomain(), retrieved.getUsername(), retrieved.getPassword(),
+                retrieved.getVersionNumber()};
         boolean validSig = isValidSig(publicKey, myFields, retrieved.getPwdSignature());
-        if(!validSig){
+        if (!validSig) {
             //System.out.println("Content tampered with!");
             throw new ServersIntegrityException();
         }
@@ -244,19 +264,20 @@ public class PwdManagerClient {
 
     void verifyServersSignature(Password retrieved) throws InvalidKeySpecException, NoSuchAlgorithmException, InvalidKeyException, SignatureException, ServersSignatureNotValidException {
         String[] myFields = new String[]{retrieved.getPublicKey(),
-                                            retrieved.getDomain(),
-                                            retrieved.getUsername(),
-                                            retrieved.getPassword(),
-                                            retrieved.getPwdSignature(),
-                                            retrieved.getTimestamp(),
-                                            retrieved.getNonce()};
+                retrieved.getDomain(),
+                retrieved.getUsername(),
+                retrieved.getPassword(),
+                retrieved.getVersionNumber(),
+                retrieved.getPwdSignature(),
+                retrieved.getTimestamp(),
+                retrieved.getNonce()};
 
         PublicKey serverPublicKey = KeyFactory.getInstance("RSA").generatePublic(
                 new X509EncodedKeySpec(cryptoManager.convertBase64ToBinary(retrieved.getPublicKey()))
         );
 
         final boolean validSig = isValidSig(serverPublicKey, myFields, retrieved.getReqSignature());
-        if(!validSig) {
+        if (!validSig) {
             //System.out.println("Message not authenticated!");
             throw new ServersSignatureNotValidException();
         }
@@ -267,8 +288,8 @@ public class PwdManagerClient {
     }
 
     private void loadIvs() throws NoSuchAlgorithmException {
-        try (ObjectInputStream in = new ObjectInputStream(new BufferedInputStream(new FileInputStream(IV_HASH_DAT)))){
-            ivMap = (TreeMap<ImmutablePair<String,String>, byte[]>) in.readObject();
+        try (ObjectInputStream in = new ObjectInputStream(new BufferedInputStream(new FileInputStream(IV_HASH_DAT)))) {
+            ivMap = (TreeMap<ImmutablePair<String, String>, MutablePair<byte[], Integer>>) in.readObject();
         } catch (ClassNotFoundException | IOException e) {
             e.printStackTrace();
             System.err.println(e.getMessage() + "\nStarting a new IV Table.");

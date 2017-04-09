@@ -18,7 +18,7 @@ public class SingleServerCalls implements ServerCalls {
     private Gson json = new Gson();
 
     public SingleServerCalls() {
-        apiBaseUrl = "http://localhost:8080";
+        apiBaseUrl = "http://localhost:3001";
     }
 
     public SingleServerCalls(int port) {
@@ -68,6 +68,7 @@ public class SingleServerCalls implements ServerCalls {
      */
     @Override
     public Password putPassword(Password pwd) throws IOException, RemoteServerInvalidResponseException {
+        System.out.println(pwd);
         RequestBody body = RequestBody.create(JSON, json.toJson(pwd));
         Request request = new Request.Builder()
                 .url(apiBaseUrl + "/password")
