@@ -61,7 +61,7 @@ public class Application {
                 if (option == 0) {
                     System.out.println("Exiting...");
                     client.close();
-                    break;
+                    System.exit(0);
                 }
                 switch (option) {
                     // Register

@@ -18,6 +18,8 @@ import java.security.*;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
 import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.TreeMap;
 
 public class PwdManagerClient {
@@ -25,22 +27,23 @@ public class PwdManagerClient {
     private static final int INITIAL_VERSION = 0;
     private static final int BYTES_IV = 16;
     private static final String IV_HASH_DAT = "ivhash.dat";
+
     private transient KeyStore keyStore;
     private transient String asymAlias;
     private transient char[] asymPwd;
     private transient String symAlias;
     private transient char[] symPwd;
 
-    //private TreeMap<ImmutablePair<String, String>, byte[]> ivMap;
     private TreeMap<ImmutablePair<String, String>, MutablePair<byte[], Integer>> ivMap;
     private CryptoManager cryptoManager;
-    private ServerCalls call;
+    private ServerCallsPool call;
 
     public String helloWorld() {
         return "Hello World. I'm a Password Manager Client";
     }
 
-    public void init(KeyStore keyStore, String asymAlias, char[] asymPwd, String symAlias, char[] symPwd) throws NoSuchAlgorithmException {
+    public void init(KeyStore keyStore, String asymAlias, char[] asymPwd, String symAlias, char[] symPwd)
+            throws NoSuchAlgorithmException {
         this.keyStore = keyStore;
         this.asymAlias = asymAlias;
         this.asymPwd = asymPwd;
@@ -48,29 +51,72 @@ public class PwdManagerClient {
         this.symPwd = symPwd;
 
         // Pick type of ServerCalls
-        call = new SingleServerCalls();
-        //call = new ServerCallsPool(this);
+        call = new ServerCallsPool();
 
         cryptoManager = new CryptoManager();
         loadIvs();
     }
 
-
     // Only for JUnit
-    void init(KeyStore keyStore, String asymAlias, char[] asymPwd, String symAlias, char[] symPwd, ServerCalls serverCalls) throws NoSuchAlgorithmException {
+    void init(KeyStore keyStore, String asymAlias, char[] asymPwd, String symAlias, char[] symPwd,
+              SingleServerCalls serverCalls) throws NoSuchAlgorithmException {
         init(keyStore, asymAlias, asymPwd, symAlias, symPwd);
-        call = serverCalls;
+        //call = serverCalls;
         ivMap = new TreeMap<>();
     }
 
+    // Necessary to Mockup
+    protected void setServerCalls(SingleServerCalls serverCalls) {
+        //this.call = serverCalls;
+    }
+
     public void register_user() throws RemoteServerInvalidResponseException {
-        PublicKey publicKey = null;
         try {
-            publicKey = CryptoUtilities.getPublicKeyFromKeystore(keyStore, asymAlias, asymPwd);
+            PublicKey publicKey = CryptoUtilities.getPublicKeyFromKeystore(keyStore, asymAlias, asymPwd);
             String publicKeyB64 = cryptoManager.convertBinaryToBase64(publicKey.getEncoded());
             User user = new User(publicKeyB64, cryptoManager.convertBinaryToBase64(signFields(new String[]{publicKeyB64})));
-            call.register(user);
-        } catch (RemoteServerInvalidResponseException | UnrecoverableKeyException | NoSuchAlgorithmException | KeyStoreException | InvalidKeyException | SignatureException | IOException e) {
+            User[] usersResponses = call.register(user);
+
+            // TODO Carlos
+            final int n = call.size();
+            /* If there were more responses than the number of faults we tolerate, than we will proceed
+            *  The expression (2.0 / 3.0) * n - 1.0 / 6.0) is N = 3f + 1 solved in order to F
+            */
+            if(countNotNull(usersResponses) > (2.0 / 3.0) * n - 1.0 / 6.0){
+                //if assinado
+                // return
+                //PublicKey publicKey = CryptoUtilities.getPublicKeyFromKeystore(keyStore, asymAlias, asymPwd);
+                List<User> failResponses = new ArrayList<>();
+                List<User> goodResponses = new ArrayList<>();
+                for (User userRes : usersResponses) {
+                    if (userRes == null) {
+                        failResponses.add(userRes);
+                    } else if (cryptoManager.isValidSig(publicKey, new String[]{user.getFingerprint()},
+                            userRes.getFingerprint())) {
+                        // Validar o fingerprint devolvido se é um digest da publicKey do client
+                        goodResponses.add(userRes);
+                    } else {
+                        failResponses.add(userRes);
+                    }
+                }
+
+
+                /** If we obtain more good responses than fail/bad responses, means that the system is ok, otherwise, we cannot
+                 * rely on the system
+                 */
+                if (goodResponses.size() > failResponses.size() && goodResponses.size() > (2.0 / 3.0) * n - 1.0 / 6.0) {
+                    //return goodResponses;
+                } else {
+                    // JAJAO
+                //    throw new RuntimeException("JAJAO");
+                }
+
+            } else {
+                // JAJAO
+                //throw new RuntimeException("JAJAO");
+            }
+        } catch (RemoteServerInvalidResponseException | UnrecoverableKeyException | NoSuchAlgorithmException
+                | KeyStoreException | InvalidKeyException | SignatureException | IOException e) {
             e.printStackTrace();
         }
     }
@@ -103,6 +149,8 @@ public class PwdManagerClient {
             );
 
             call.putPassword(pwdToRegister);
+
+            // TODO Bernardo
         } catch (InvalidKeyException | InvalidAlgorithmParameterException | KeyStoreException |
                 NoSuchAlgorithmException | UnrecoverableKeyException | SignatureException |
                 IllegalBlockSizeException | BadPaddingException | NoSuchPaddingException |
@@ -137,13 +185,33 @@ public class PwdManagerClient {
                     cryptoManager.convertBinaryToBase64(signFields(fieldsToSend))
             );
 
-            Password retrieved = call.retrievePassword(pwdToRetrieve);
-            verifyServersSignature(retrieved);
-            verifyServersIntegrity(publicKey, retrieved);
-            verifyFreshness(retrieved);
+            Password[] retrieved = call.retrievePassword(pwdToRetrieve);
+
+            for (int i = 0; i < retrieved.length; i++) {
+                Password p = retrieved[i];
+                if (p != null) {
+                    try {
+                        verifyServersSignature(p);
+                        verifyServersIntegrity(publicKey, p);
+                        verifyFreshness(p);
+                    } catch (InvalidKeySpecException | NoSuchAlgorithmException | SignatureException | InvalidKeyException | ServersSignatureNotValidException e) {
+                        retrieved[i] = null;
+                    }
+                }
+            }
+
+            final int n = call.size();
+            /* If there were more responses than the number of faults we tolerate, than we will proceed
+            *  The expression (2.0 / 3.0) * n - 1.0 / 6.0) is N = 3f + 1 solved in order to F
+            */
+            if(countNotNull(retrieved) > (2.0 / 3.0) * n - 1.0 / 6.0) {
+
+
+
+            }
 
             // Finally, decrypting password.
-            byte[] decryptedBytes = cryptoManager.runAES(cryptoManager.convertBase64ToBinary(retrieved.getPassword()),
+            byte[] decryptedBytes = cryptoManager.runAES(cryptoManager.convertBase64ToBinary(retrieved[0].getPassword()),
                     CryptoUtilities.getAESKeyFromKeystore(keyStore, symAlias, symPwd),
                     retrieveIV(domain, username),
                     Cipher.DECRYPT_MODE);
@@ -151,7 +219,7 @@ public class PwdManagerClient {
 
         } catch (InvalidKeyException | InvalidAlgorithmParameterException | KeyStoreException |
                 NoSuchAlgorithmException | UnrecoverableKeyException | SignatureException |
-                InvalidKeySpecException | IllegalBlockSizeException | BadPaddingException |
+                IllegalBlockSizeException | BadPaddingException |
                 NoSuchPaddingException | IOException e) {
             e.printStackTrace();
             System.err.println(e.getMessage());
@@ -181,9 +249,12 @@ public class PwdManagerClient {
         }
     }
 
-    // Necessary to Mockup
-    protected void setServerCalls(ServerCalls serverCalls) {
-        this.call = serverCalls;
+    private int countNotNull(Object[] array) {
+        int count = 0;
+        for (Object o : array) {
+            if (o != null) count++;
+        }
+        return count;
     }
 
     private byte[] signFields(String[] fieldsToSend) throws NoSuchAlgorithmException, InvalidKeyException, SignatureException, UnrecoverableKeyException, KeyStoreException {
@@ -195,9 +266,9 @@ public class PwdManagerClient {
         int version = getVersion(domain, username) + 1;
         setVersion(domain, username, version);
         String[] stuff = new String[]{domain,
-                                    username,
-                                    password,
-                                    String.valueOf(version)};
+                username,
+                password,
+                String.valueOf(version)};
         String[] encryptedStuff = new String[stuff.length];
         for (int i = 0; i < stuff.length && i < encryptedStuff.length; i++) {
             encryptedStuff[i] = cryptoManager.convertBinaryToBase64(
@@ -241,7 +312,7 @@ public class PwdManagerClient {
         return encryptedStuff;
     }
 
-    void verifyFreshness(Password retrieved) {
+    private void verifyFreshness(Password retrieved) {
         // Check Freshness
         boolean validTime = cryptoManager.isTimestampAndNonceValid(new Timestamp(Long.valueOf(retrieved.getTimestamp())),
                 cryptoManager.convertBase64ToBinary(retrieved.getNonce()));
@@ -262,7 +333,7 @@ public class PwdManagerClient {
         }
     }
 
-    void verifyServersSignature(Password retrieved) throws InvalidKeySpecException, NoSuchAlgorithmException, InvalidKeyException, SignatureException, ServersSignatureNotValidException {
+    private void verifyServersSignature(Password retrieved) throws InvalidKeySpecException, NoSuchAlgorithmException, InvalidKeyException, SignatureException, ServersSignatureNotValidException {
         String[] myFields = new String[]{retrieved.getPublicKey(),
                 retrieved.getDomain(),
                 retrieved.getUsername(),

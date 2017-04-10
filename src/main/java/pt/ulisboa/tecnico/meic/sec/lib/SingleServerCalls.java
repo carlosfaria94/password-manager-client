@@ -9,7 +9,7 @@ import java.io.IOException;
 /**
  * Methods to interact with the server via a REST service
  */
-public class SingleServerCalls implements ServerCalls {
+public class SingleServerCalls {
 
     private static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
 
@@ -32,7 +32,6 @@ public class SingleServerCalls implements ServerCalls {
      * @return - null when user is not successful registered
      * @throws IOException
      */
-    @Override
     public User register(User user) throws IOException, RemoteServerInvalidResponseException {
         RequestBody body = RequestBody.create(JSON, json.toJson(user));
         Request request = new Request.Builder()
@@ -47,12 +46,15 @@ public class SingleServerCalls implements ServerCalls {
             return newUser;
         } else {
             switch (response.code()) {
-                case 409: System.out.println("User already registered.");
-                break;
-                case 500: System.out.println("User not registered. Internal Server error.");
-                break;
-                default: System.out.println("User not registered.");
-                break;
+                case 409:
+                    System.out.println("User already registered.");
+                    break;
+                case 500:
+                    System.out.println("User not registered. Internal Server error.");
+                    break;
+                default:
+                    System.out.println("User not registered.");
+                    break;
             }
             //throw new RemoteServerInvalidResponseException();
             return null;
@@ -66,7 +68,6 @@ public class SingleServerCalls implements ServerCalls {
      * @return
      * @throws IOException
      */
-    @Override
     public Password putPassword(Password pwd) throws IOException, RemoteServerInvalidResponseException {
         System.out.println(pwd);
         RequestBody body = RequestBody.create(JSON, json.toJson(pwd));
@@ -86,7 +87,6 @@ public class SingleServerCalls implements ServerCalls {
         }
     }
 
-    @Override
     public Password retrievePassword(Password pwd) throws IOException, RemoteServerInvalidResponseException {
         String input = json.toJson(pwd);
 
