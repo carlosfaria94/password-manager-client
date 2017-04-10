@@ -5,7 +5,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import pt.ulisboa.tecnico.meic.sec.CryptoUtilities;
-import pt.ulisboa.tecnico.meic.sec.lib.exception.RemoteServerInvalidResponseException;
 import pt.ulisboa.tecnico.meic.sec.lib.exception.ServersIntegrityException;
 import pt.ulisboa.tecnico.meic.sec.lib.exception.ServersSignatureNotValidException;
 
@@ -20,7 +19,7 @@ public class ServersIntegrityNotValidMockupTest extends TestCase {
     private SingleServerCallsInvalidServersIntegrityMockup server;
 
     @Before
-    public void setUp() throws CertificateException, NoSuchAlgorithmException, KeyStoreException, IOException, RemoteServerInvalidResponseException, SignatureException, NoSuchProviderException, InvalidKeyException {
+    public void setUp() throws CertificateException, NoSuchAlgorithmException, KeyStoreException, IOException, SignatureException, NoSuchProviderException, InvalidKeyException {
         pwdManagerClient = new PwdManagerClient();
         server = new SingleServerCallsInvalidServersIntegrityMockup();
 
@@ -35,7 +34,7 @@ public class ServersIntegrityNotValidMockupTest extends TestCase {
     }
 
     @Test(expected = ServersIntegrityException.class)
-    public void testServersIntegrityNotValid() throws RemoteServerInvalidResponseException {
+    public void testServersIntegrityNotValid() {
 
         pwdManagerClient.save_password("youtube.com", "unicornio", "arcoiris");
         try {

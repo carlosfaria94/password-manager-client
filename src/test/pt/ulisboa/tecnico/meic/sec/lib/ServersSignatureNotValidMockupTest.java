@@ -5,15 +5,12 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import pt.ulisboa.tecnico.meic.sec.CryptoUtilities;
-import pt.ulisboa.tecnico.meic.sec.lib.exception.RemoteServerInvalidResponseException;
 import pt.ulisboa.tecnico.meic.sec.lib.exception.ServersIntegrityException;
 import pt.ulisboa.tecnico.meic.sec.lib.exception.ServersSignatureNotValidException;
 
 import java.io.IOException;
 import java.security.*;
 import java.security.cert.CertificateException;
-
-import static org.junit.Assert.assertEquals;
 
 
 public class ServersSignatureNotValidMockupTest extends TestCase {
@@ -22,7 +19,7 @@ public class ServersSignatureNotValidMockupTest extends TestCase {
     private SingleServerCallsInvalidServersSignatureMockup server;
 
     @Before
-    public void setUp() throws CertificateException, NoSuchAlgorithmException, KeyStoreException, IOException, RemoteServerInvalidResponseException, SignatureException, NoSuchProviderException, InvalidKeyException {
+    public void setUp() throws CertificateException, NoSuchAlgorithmException, KeyStoreException, IOException, SignatureException, NoSuchProviderException, InvalidKeyException {
         pwdManagerClient = new PwdManagerClient();
         server = new SingleServerCallsInvalidServersSignatureMockup();
 
@@ -37,7 +34,7 @@ public class ServersSignatureNotValidMockupTest extends TestCase {
     }
 
     @Test(expected = ServersSignatureNotValidException.class)
-    public void testServersSignatureNotValid() throws RemoteServerInvalidResponseException {
+    public void testServersSignatureNotValid() {
 
         pwdManagerClient.save_password("youtube.com", "unicornio", "arcoiris");
         try {

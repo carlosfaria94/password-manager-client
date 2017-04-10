@@ -1,6 +1,7 @@
 package pt.ulisboa.tecnico.meic.sec.lib;
 
 import pt.ulisboa.tecnico.meic.sec.CryptoManager;
+
 import java.security.*;
 import java.util.HashMap;
 
@@ -21,7 +22,7 @@ public class SingleServerCallsMockup extends SingleServerCalls {
         cryptoManager = new CryptoManager();
     }
 
-    protected byte[] signFields (String[] fieldsToSend) throws NoSuchAlgorithmException, InvalidKeyException, SignatureException {
+    protected byte[] signFields(String[] fieldsToSend) throws NoSuchAlgorithmException, InvalidKeyException, SignatureException {
         return cryptoManager.signFields(fieldsToSend, privateKey);
     }
 
@@ -32,8 +33,8 @@ public class SingleServerCallsMockup extends SingleServerCalls {
 
     @Override
     public Password putPassword(Password pwd) {
-        passwords.put(pwd.getDomain()+pwd.getUsername(), pwd.getPassword());
-        pwdSignatures.put(pwd.getDomain()+pwd.getUsername(), pwd.getPwdSignature());
+        passwords.put(pwd.getDomain() + pwd.getUsername(), pwd.getPassword());
+        pwdSignatures.put(pwd.getDomain() + pwd.getUsername(), pwd.getPwdSignature());
         try {
             String[] fieldsToSend = new String[]{
                     cryptoManager.convertBinaryToBase64(publicKey.getEncoded()),

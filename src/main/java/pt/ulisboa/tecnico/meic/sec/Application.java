@@ -1,34 +1,25 @@
 package pt.ulisboa.tecnico.meic.sec;
 
+import pt.ulisboa.tecnico.meic.sec.lib.LocalPassword;
 import pt.ulisboa.tecnico.meic.sec.lib.PwdManagerClient;
-import pt.ulisboa.tecnico.meic.sec.lib.exception.RemoteServerInvalidResponseException;
-import pt.ulisboa.tecnico.meic.sec.lib.exception.ServersIntegrityException;
-import pt.ulisboa.tecnico.meic.sec.lib.exception.ServersSignatureNotValidException;
 
-import java.io.Console;
-import java.io.IOException;
+import java.lang.reflect.Array;
 import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.cert.CertificateException;
+import java.util.Arrays;
 import java.util.InputMismatchException;
 import java.util.Scanner;
 
 public class Application {
     private static final String PASSWORD = "batata";
 
-    public static void main(String[] args)
-            throws CertificateException, NoSuchAlgorithmException, KeyStoreException,
-            IOException, RemoteServerInvalidResponseException, ServersIntegrityException,
-            ServersSignatureNotValidException {
-
+    public static void main(String[] args) {
         String ksPath;
         if (args.length != 1) {
             System.err.println("Argument(s) missing!");
             System.err.printf("Usage: java %s keystorePath%n", Application.class.getName());
             System.err.println("Assuming default path.");
             ksPath = "keystore.jceks";
-        }else
+        } else
             ksPath = args[0];
 
         try {
@@ -99,13 +90,13 @@ public class Application {
                             System.out.println("No puedo!");
                             break;
                     }
-                }catch (Exception e1){
+                } catch (Exception e1) {
                     e1.printStackTrace();
 
                 }
             }
 
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }

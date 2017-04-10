@@ -2,7 +2,6 @@ package pt.ulisboa.tecnico.meic.sec.lib;
 
 import com.google.gson.Gson;
 import okhttp3.*;
-import pt.ulisboa.tecnico.meic.sec.lib.exception.RemoteServerInvalidResponseException;
 
 import java.io.IOException;
 
@@ -32,7 +31,7 @@ public class SingleServerCalls {
      * @return - null when user is not successful registered
      * @throws IOException
      */
-    public User register(User user) throws IOException, RemoteServerInvalidResponseException {
+    public User register(User user) throws IOException {
         RequestBody body = RequestBody.create(JSON, json.toJson(user));
         Request request = new Request.Builder()
                 .url(apiBaseUrl + "/")
@@ -67,7 +66,7 @@ public class SingleServerCalls {
      * @return
      * @throws IOException
      */
-    public Password putPassword(Password pwd) throws IOException, RemoteServerInvalidResponseException {
+    public Password putPassword(Password pwd) throws IOException {
         System.out.println(pwd);
         RequestBody body = RequestBody.create(JSON, json.toJson(pwd));
         Request request = new Request.Builder()
@@ -86,7 +85,7 @@ public class SingleServerCalls {
         }
     }
 
-    public Password retrievePassword(Password pwd) throws IOException, RemoteServerInvalidResponseException {
+    public Password retrievePassword(Password pwd) throws IOException {
         String input = json.toJson(pwd);
 
         RequestBody body = RequestBody.create(JSON, input);

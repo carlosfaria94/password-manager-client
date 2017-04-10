@@ -1,6 +1,6 @@
 package pt.ulisboa.tecnico.meic.sec.lib;
 
-import java.security.*;
+import java.security.NoSuchAlgorithmException;
 
 /**
  * Created by Bernardo on 16/03/2017.
@@ -12,7 +12,7 @@ public class SingleServerCallsInvalidServersSignatureMockup extends SingleServer
     }
 
     @Override
-    public Password retrievePassword(Password pwd){
+    public Password retrievePassword(Password pwd) {
         //Change password byte
         pwd = super.retrievePassword(pwd);
         byte[] password = super.cryptoManager.convertBase64ToBinary(pwd.password);

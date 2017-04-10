@@ -14,7 +14,7 @@ public class SingleServerCallsInvalidServersIntegrityMockup extends SingleServer
     }
 
     @Override
-    public Password retrievePassword(Password pwd){
+    public Password retrievePassword(Password pwd) {
         try {
             String[] fieldsToSend = new String[]{
                     cryptoManager.convertBinaryToBase64(publicKey.getEncoded()),

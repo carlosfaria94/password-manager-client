@@ -1,7 +1,5 @@
 package pt.ulisboa.tecnico.meic.sec.lib;
 
-import pt.ulisboa.tecnico.meic.sec.lib.exception.RemoteServerInvalidResponseException;
-
 import java.io.IOException;
 
 
@@ -15,6 +13,11 @@ public class ServerCallsPool {
     public ServerCallsPool(int initialPort, int finalPort) {
         this.initialPort = initialPort;
         this.finalPort = finalPort;
+        init();
+    }
+
+    public ServerCallsPool(int replicas) {
+        this.finalPort = this.initialPort + replicas - 1;
         init();
     }
 
@@ -33,7 +36,7 @@ public class ServerCallsPool {
         }
     }
 
-    public User[] register(User user) throws IOException, RemoteServerInvalidResponseException {
+    public User[] register(User user) throws IOException {
         Thread[] threads = new Thread[singleServerCalls.length];
         User[] usersResponses = new User[singleServerCalls.length];
 
@@ -62,7 +65,7 @@ public class ServerCallsPool {
     }
 
 
-    public Password[] putPassword(Password pwd) throws IOException, RemoteServerInvalidResponseException {
+    public Password[] putPassword(Password pwd) throws IOException {
         Thread[] threads = new Thread[singleServerCalls.length];
         Password[] passwordsResponse = new Password[singleServerCalls.length];
         for (int i = 0; i < singleServerCalls.length || i < threads.length; i++) {
@@ -78,9 +81,6 @@ public class ServerCallsPool {
         for (Thread thread : threads) {
             thread.start();
         }
-
-        // Some consensus code here
-
         for (Thread thread : threads) {
             try {
                 thread.join();
@@ -91,7 +91,7 @@ public class ServerCallsPool {
         return passwordsResponse;
     }
 
-    public Password[] retrievePassword(Password pwd) throws IOException, RemoteServerInvalidResponseException {
+    public Password[] retrievePassword(Password pwd) throws IOException {
         Thread[] threads = new Thread[singleServerCalls.length];
         Password[] passwordsResponse = new Password[singleServerCalls.length];
         for (int i = 0; i < singleServerCalls.length || i < threads.length; i++) {

@@ -4,7 +4,10 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.MutablePair;
 import pt.ulisboa.tecnico.meic.sec.CryptoManager;
 import pt.ulisboa.tecnico.meic.sec.CryptoUtilities;
-import pt.ulisboa.tecnico.meic.sec.lib.exception.*;
+import pt.ulisboa.tecnico.meic.sec.lib.exception.MessageNotFreshException;
+import pt.ulisboa.tecnico.meic.sec.lib.exception.NotEnoughResponsesConsensusException;
+import pt.ulisboa.tecnico.meic.sec.lib.exception.ServersIntegrityException;
+import pt.ulisboa.tecnico.meic.sec.lib.exception.ServersSignatureNotValidException;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -15,9 +18,7 @@ import java.security.*;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
 import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.TreeMap;
+import java.util.*;
 
 public class PwdManagerClient {
 
@@ -67,7 +68,7 @@ public class PwdManagerClient {
         //this.call = serverCalls;
     }
 
-    public void register_user() throws RemoteServerInvalidResponseException {
+    public void register_user() {
         try {
             PublicKey publicKey = CryptoUtilities.getPublicKeyFromKeystore(keyStore, asymAlias, asymPwd);
             String publicKeyB64 = cryptoManager.convertBinaryToBase64(publicKey.getEncoded());
@@ -75,7 +76,7 @@ public class PwdManagerClient {
             User[] usersResponses = call.register(user);
 
             // TODO Carlos
-            if(enoughResponses(usersResponses)){
+            if (enoughResponses(usersResponses)) {
                 //if assinado
                 // return
                 //PublicKey publicKey = CryptoUtilities.getPublicKeyFromKeystore(keyStore, asymAlias, asymPwd);
@@ -102,20 +103,20 @@ public class PwdManagerClient {
                     //return goodResponses;
                 } else {
                     // JAJAO
-                //    throw new RuntimeException("JAJAO");
+                    //    throw new RuntimeException("JAJAO");
                 }
 
             } else {
                 // JAJAO
                 //throw new RuntimeException("JAJAO");
             }
-        } catch (RemoteServerInvalidResponseException | UnrecoverableKeyException | NoSuchAlgorithmException
+        } catch (UnrecoverableKeyException | NoSuchAlgorithmException
                 | KeyStoreException | InvalidKeyException | SignatureException | IOException e) {
             e.printStackTrace();
         }
     }
 
-    public void save_password(String domain, String username, String password) throws RemoteServerInvalidResponseException {
+    public void save_password(String domain, String username, String password) {
         try {
             PublicKey publicKey = CryptoUtilities.getPublicKeyFromKeystore(keyStore, asymAlias, asymPwd);
             String[] encryptedStuff = encryptFields(domain, username, password);
@@ -154,8 +155,8 @@ public class PwdManagerClient {
         }
     }
 
-    public String retrieve_password(String domain, String username) throws RemoteServerInvalidResponseException, ServersIntegrityException, ServersSignatureNotValidException {
-        String decryptedPwd = "";
+    public String retrieve_password(String domain, String username) throws ServersIntegrityException, ServersSignatureNotValidException {
+        String password = "";
         try {
             PublicKey publicKey = CryptoUtilities.getPublicKeyFromKeystore(keyStore, asymAlias, asymPwd);
             String[] encryptedStuff = encryptFields(domain, username);
@@ -181,7 +182,7 @@ public class PwdManagerClient {
 
             Password[] retrieved = call.retrievePassword(pwdToRetrieve);
 
-            ArrayList<String[]> decipheredData = new ArrayList<>();
+            ArrayList<LocalPassword> decipheredData = new ArrayList<>();
             // If any response is insecure, we delete it.
             for (int i = 0; i < retrieved.length; i++) {
                 Password p = retrieved[i];
@@ -190,7 +191,8 @@ public class PwdManagerClient {
                         verifyServersSignature(p);
                         verifyServersIntegrity(publicKey, p);
                         verifyFreshness(p);
-                        decipheredData.add(decipherFields(domain, username, p));
+                        String[] fields = decipherFields(domain, username, p);
+                        decipheredData.add(new LocalPassword(fields[0], fields[1], fields[2], fields[3]));
                     } catch (InvalidKeySpecException | NoSuchAlgorithmException | SignatureException |
                             InvalidKeyException | ServersSignatureNotValidException e) {
                         retrieved[i] = null;
@@ -198,13 +200,9 @@ public class PwdManagerClient {
                 }
             }
 
-            if(!enoughResponses(retrieved)) throw new NotEnoughResponsesConsensusException();
+            if (!enoughResponses(retrieved)) throw new NotEnoughResponsesConsensusException();
+            password = getMostRecentPassword(decipheredData);
 
-            for(String[] data : decipheredData){
-                for (String s : data){
-                    System.out.println(s);
-                }
-            }
         } catch (InvalidKeyException | InvalidAlgorithmParameterException | KeyStoreException |
                 NoSuchAlgorithmException | UnrecoverableKeyException | SignatureException |
                 IllegalBlockSizeException | BadPaddingException |
@@ -212,7 +210,29 @@ public class PwdManagerClient {
             e.printStackTrace();
             System.err.println(e.getMessage());
         }
-        return decryptedPwd;
+        return password;
+    }
+
+    private String getMostRecentPassword(ArrayList<LocalPassword> decipheredData) {
+        // Sort to get the most recent version
+        LocalPassword[] array = new LocalPassword[decipheredData.size()];
+        array = decipheredData.toArray(array);
+        Arrays.sort(array);
+        if(array[0].getVersion() > getVersion(array[0].getDomain(), array[0].getUsername())){
+            System.out.println("Server version is greater than the client. This can occur in a sync problem. " +
+                    "Do you want to update your version records? [Y/n]");
+            Scanner scanner = new Scanner(System.in);
+            if(scanner.nextLine().equalsIgnoreCase("y")){
+                setVersion(array[0].getDomain(), array[0].getUsername(), array[0].getVersion());
+                System.out.println("Version updated!");
+            }else if(scanner.nextLine().equalsIgnoreCase("n")){
+                System.out.println("Skip updated!");
+            }else
+                System.out.println("Assuming default: Skip Update");
+        }else
+            setVersion(array[0].getDomain(), array[0].getUsername(), array[0].getVersion());
+        System.out.println("Password Selected:\n" + array[0]);
+        return array[0].getPassword();
     }
 
     private String[] decipherFields(String domain, String username, Password p) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidAlgorithmParameterException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException, UnrecoverableKeyException, KeyStoreException {
