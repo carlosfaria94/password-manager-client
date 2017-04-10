@@ -56,7 +56,6 @@ public class SingleServerCalls {
                     System.out.println("User not registered.");
                     break;
             }
-            //throw new RemoteServerInvalidResponseException();
             return null;
         }
     }
@@ -83,7 +82,7 @@ public class SingleServerCalls {
             return newPassword;
         } else {
             System.out.println("Password not registered. HTTP Code: " + response.code());
-            throw new RemoteServerInvalidResponseException();
+            return null;
         }
     }
 
@@ -103,7 +102,7 @@ public class SingleServerCalls {
             return pwdRetrieved;
         } else {
             System.out.println("Password not retrieved. HTTP Code: " + response.code());
-            throw new RemoteServerInvalidResponseException();
+            return null;
         }
     }
 }

@@ -40,69 +40,73 @@ public class Application {
 
             Scanner scanner = new Scanner(System.in);
             while (true) {
-                System.out.print("\n\nMenu\n" +
-                        "0 - Exit\n" +
-                        "1 - Register\n" +
-                        "2 - Save Password\n" +
-                        "3 - Retrieve Password\n" +
-                        "4 - Hello\n" +
-                        "\n> ");
-                int option;
                 try {
-                    option = scanner.nextInt();
-                } catch (InputMismatchException e) {
+                    System.out.print("\n\nMenu\n" +
+                            "0 - Exit\n" +
+                            "1 - Register\n" +
+                            "2 - Save Password\n" +
+                            "3 - Retrieve Password\n" +
+                            "4 - Hello\n" +
+                            "\n> ");
+                    int option;
+                    try {
+                        option = scanner.nextInt();
+                    } catch (InputMismatchException e) {
+                        scanner.nextLine();
+                        System.err.println("Not a number.");
+                        continue;
+                    }
                     scanner.nextLine();
-                    System.err.println("Not a number.");
-                    continue;
-                }
-                scanner.nextLine();
 
 
-                if (option == 0) {
-                    System.out.println("Exiting...");
-                    client.close();
-                    System.exit(0);
-                }
-                switch (option) {
-                    // Register
-                    case 1:
-                        System.out.println("Registering user...");
-                        client.register_user();
-                        break;
-                    //Save Pwd
-                    case 2:
-                        System.out.println("Fill the following fields:");
-                        System.out.print("Domain: ");
-                        String domain = scanner.nextLine();
-                        System.out.print("Username: ");
-                        String username = scanner.nextLine();
-                        System.out.print("Password: ");
-                        String pwd = scanner.nextLine();
-                        client.save_password(domain, username, pwd);
-                        break;
-                    // retrieve
-                    case 3:
-                        System.out.println("Fill the following fields:");
-                        System.out.print("Domain: ");
-                        String domain2 = scanner.nextLine();
-                        System.out.print("Username: ");
-                        String username2 = scanner.nextLine();
-                        System.out.println("Password retrieved: " + client.retrieve_password(domain2, username2));
-                        break;
+                    if (option == 0) {
+                        System.out.println("Exiting...");
+                        client.close();
+                        System.exit(0);
+                    }
+                    switch (option) {
+                        // Register
+                        case 1:
+                            System.out.println("Registering user...");
+                            client.register_user();
+                            break;
+                        //Save Pwd
+                        case 2:
+                            System.out.println("Fill the following fields:");
+                            System.out.print("Domain: ");
+                            String domain = scanner.nextLine();
+                            System.out.print("Username: ");
+                            String username = scanner.nextLine();
+                            System.out.print("Password: ");
+                            String pwd = scanner.nextLine();
+                            client.save_password(domain, username, pwd);
+                            break;
+                        // retrieve
+                        case 3:
+                            System.out.println("Fill the following fields:");
+                            System.out.print("Domain: ");
+                            String domain2 = scanner.nextLine();
+                            System.out.print("Username: ");
+                            String username2 = scanner.nextLine();
+                            System.out.println("Password retrieved: " + client.retrieve_password(domain2, username2));
+                            break;
 
-                    case 4:
-                        System.out.println(client.helloWorld());
-                        break;
+                        case 4:
+                            System.out.println(client.helloWorld());
+                            break;
 
-                    default:
-                        System.out.println("No puedo!");
-                        break;
+                        default:
+                            System.out.println("No puedo!");
+                            break;
+                    }
+                }catch (Exception e1){
+                    e1.printStackTrace();
+
                 }
             }
 
         }catch (Exception e){
             e.printStackTrace();
-            System.out.println(e.getMessage());
         }
     }
 }

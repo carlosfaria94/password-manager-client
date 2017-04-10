@@ -4,10 +4,7 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.MutablePair;
 import pt.ulisboa.tecnico.meic.sec.CryptoManager;
 import pt.ulisboa.tecnico.meic.sec.CryptoUtilities;
-import pt.ulisboa.tecnico.meic.sec.lib.exception.MessageNotFreshException;
-import pt.ulisboa.tecnico.meic.sec.lib.exception.RemoteServerInvalidResponseException;
-import pt.ulisboa.tecnico.meic.sec.lib.exception.ServersIntegrityException;
-import pt.ulisboa.tecnico.meic.sec.lib.exception.ServersSignatureNotValidException;
+import pt.ulisboa.tecnico.meic.sec.lib.exception.*;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -78,11 +75,7 @@ public class PwdManagerClient {
             User[] usersResponses = call.register(user);
 
             // TODO Carlos
-            final int n = call.size();
-            /* If there were more responses than the number of faults we tolerate, than we will proceed
-            *  The expression (2.0 / 3.0) * n - 1.0 / 6.0) is N = 3f + 1 solved in order to F
-            */
-            if(countNotNull(usersResponses) > (2.0 / 3.0) * n - 1.0 / 6.0){
+            if(enoughResponses(usersResponses)){
                 //if assinado
                 // return
                 //PublicKey publicKey = CryptoUtilities.getPublicKeyFromKeystore(keyStore, asymAlias, asymPwd);
@@ -104,6 +97,7 @@ public class PwdManagerClient {
                 /** If we obtain more good responses than fail/bad responses, means that the system is ok, otherwise, we cannot
                  * rely on the system
                  */
+                final int n = call.size();
                 if (goodResponses.size() > failResponses.size() && goodResponses.size() > (2.0 / 3.0) * n - 1.0 / 6.0) {
                     //return goodResponses;
                 } else {
@@ -187,6 +181,8 @@ public class PwdManagerClient {
 
             Password[] retrieved = call.retrievePassword(pwdToRetrieve);
 
+            ArrayList<String[]> decipheredData = new ArrayList<>();
+            // If any response is insecure, we delete it.
             for (int i = 0; i < retrieved.length; i++) {
                 Password p = retrieved[i];
                 if (p != null) {
@@ -194,29 +190,21 @@ public class PwdManagerClient {
                         verifyServersSignature(p);
                         verifyServersIntegrity(publicKey, p);
                         verifyFreshness(p);
-                    } catch (InvalidKeySpecException | NoSuchAlgorithmException | SignatureException | InvalidKeyException | ServersSignatureNotValidException e) {
+                        decipheredData.add(decipherFields(domain, username, p));
+                    } catch (InvalidKeySpecException | NoSuchAlgorithmException | SignatureException |
+                            InvalidKeyException | ServersSignatureNotValidException e) {
                         retrieved[i] = null;
                     }
                 }
             }
 
-            final int n = call.size();
-            /* If there were more responses than the number of faults we tolerate, than we will proceed
-            *  The expression (2.0 / 3.0) * n - 1.0 / 6.0) is N = 3f + 1 solved in order to F
-            */
-            if(countNotNull(retrieved) > (2.0 / 3.0) * n - 1.0 / 6.0) {
+            if(!enoughResponses(retrieved)) throw new NotEnoughResponsesConsensusException();
 
-
-
+            for(String[] data : decipheredData){
+                for (String s : data){
+                    System.out.println(s);
+                }
             }
-
-            // Finally, decrypting password.
-            byte[] decryptedBytes = cryptoManager.runAES(cryptoManager.convertBase64ToBinary(retrieved[0].getPassword()),
-                    CryptoUtilities.getAESKeyFromKeystore(keyStore, symAlias, symPwd),
-                    retrieveIV(domain, username),
-                    Cipher.DECRYPT_MODE);
-            decryptedPwd = new String(decryptedBytes);
-
         } catch (InvalidKeyException | InvalidAlgorithmParameterException | KeyStoreException |
                 NoSuchAlgorithmException | UnrecoverableKeyException | SignatureException |
                 IllegalBlockSizeException | BadPaddingException |
@@ -225,6 +213,29 @@ public class PwdManagerClient {
             System.err.println(e.getMessage());
         }
         return decryptedPwd;
+    }
+
+    private String[] decipherFields(String domain, String username, Password p) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidAlgorithmParameterException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException, UnrecoverableKeyException, KeyStoreException {
+        return new String[]{
+                new String(decipherField(domain, username, p.getDomain())),
+                new String(decipherField(domain, username, p.getUsername())),
+                new String(decipherField(domain, username, p.getPassword())),
+                new String(decipherField(domain, username, p.getVersionNumber()))};
+    }
+
+    private byte[] decipherField(String domain, String username, String field) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidAlgorithmParameterException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException, UnrecoverableKeyException, KeyStoreException {
+        return cryptoManager.runAES(cryptoManager.convertBase64ToBinary(field),
+                CryptoUtilities.getAESKeyFromKeystore(keyStore, symAlias, symPwd),
+                retrieveIV(domain, username),
+                Cipher.DECRYPT_MODE);
+    }
+
+    private boolean enoughResponses(Object[] retrieved) {
+        int n = call.size();
+        /* If there were more responses than the number of faults we tolerate, then we will proceed.
+        *  The expression (2.0 / 3.0) * n - 1.0 / 6.0) is N = 3f + 1 solved in order to F
+        */
+        return countNotNull(retrieved) > (2.0 / 3.0) * n - 1.0 / 6.0;
     }
 
     public void close() {
@@ -251,9 +262,7 @@ public class PwdManagerClient {
 
     private int countNotNull(Object[] array) {
         int count = 0;
-        for (Object o : array) {
-            if (o != null) count++;
-        }
+        for (Object o : array) if (o != null) count++;
         return count;
     }
 
