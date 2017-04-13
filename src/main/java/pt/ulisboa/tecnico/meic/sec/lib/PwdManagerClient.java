@@ -201,7 +201,14 @@ public class PwdManagerClient {
             }
 
             if (!enoughResponses(retrieved)) throw new NotEnoughResponsesConsensusException();
-            password = getMostRecentPassword(decipheredData);
+
+            LocalPassword localPassword = getMostRecentPassword(decipheredData);
+
+            // Atomic (1, N) Register
+            // #writeYourReads
+            save_password(localPassword.getDomain(), localPassword.getUsername(), localPassword.getPassword());
+
+            password = localPassword.getPassword();
 
         } catch (InvalidKeyException | InvalidAlgorithmParameterException | KeyStoreException |
                 NoSuchAlgorithmException | UnrecoverableKeyException | SignatureException |
@@ -213,7 +220,7 @@ public class PwdManagerClient {
         return password;
     }
 
-    private String getMostRecentPassword(ArrayList<LocalPassword> decipheredData) {
+    private LocalPassword getMostRecentPassword(ArrayList<LocalPassword> decipheredData) {
         // Sort to get the most recent version
         LocalPassword[] array = new LocalPassword[decipheredData.size()];
         array = decipheredData.toArray(array);
@@ -232,7 +239,7 @@ public class PwdManagerClient {
         }else
             setVersion(array[0].getDomain(), array[0].getUsername(), array[0].getVersion());
         System.out.println("Password Selected:\n" + array[0]);
-        return array[0].getPassword();
+        return array[0];
     }
 
     private String[] decipherFields(String domain, String username, Password p) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidAlgorithmParameterException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException, UnrecoverableKeyException, KeyStoreException {
