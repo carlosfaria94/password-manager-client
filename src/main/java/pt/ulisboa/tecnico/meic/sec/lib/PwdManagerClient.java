@@ -14,6 +14,7 @@ import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
@@ -73,43 +74,23 @@ public class PwdManagerClient {
             PublicKey publicKey = CryptoUtilities.getPublicKeyFromKeystore(keyStore, asymAlias, asymPwd);
             String publicKeyB64 = cryptoManager.convertBinaryToBase64(publicKey.getEncoded());
             User user = new User(publicKeyB64, cryptoManager.convertBinaryToBase64(signFields(new String[]{publicKeyB64})));
-            User[] usersResponses = call.register(user);
 
-            // TODO Carlos
-            if (enoughResponses(usersResponses)) {
-                //if assinado
-                // return
-                //PublicKey publicKey = CryptoUtilities.getPublicKeyFromKeystore(keyStore, asymAlias, asymPwd);
-                List<User> failResponses = new ArrayList<>();
-                List<User> goodResponses = new ArrayList<>();
-                for (User userRes : usersResponses) {
-                    if (userRes == null) {
-                        failResponses.add(userRes);
-                    } else if (cryptoManager.isValidSig(publicKey, new String[]{user.getFingerprint()},
-                            userRes.getFingerprint())) {
-                        // Validar o fingerprint devolvido se é um digest da publicKey do client
-                        goodResponses.add(userRes);
-                    } else {
-                        failResponses.add(userRes);
+            User[] retrieved = call.register(user);
+
+            // If any response is insecure, we delete it.
+            for (int i = 0; i < retrieved.length; i++) {
+                User u = retrieved[i];
+                if (u != null) {
+                    try {
+                        isValidFingerprint(publicKeyB64, u.getFingerprint());
+                    } catch (NoSuchAlgorithmException e) {
+                        retrieved[i] = null;
                     }
                 }
-
-
-                /** If we obtain more good responses than fail/bad responses, means that the system is ok, otherwise, we cannot
-                 * rely on the system
-                 */
-                final int n = call.size();
-                if (goodResponses.size() > failResponses.size() && goodResponses.size() > (2.0 / 3.0) * n - 1.0 / 6.0) {
-                    //return goodResponses;
-                } else {
-                    // JAJAO
-                    //    throw new RuntimeException("JAJAO");
-                }
-
-            } else {
-                // JAJAO
-                //throw new RuntimeException("JAJAO");
             }
+
+            if (!enoughResponses(retrieved)) throw new NotEnoughResponsesConsensusException();
+
         } catch (UnrecoverableKeyException | NoSuchAlgorithmException
                 | KeyStoreException | InvalidKeyException | SignatureException | IOException e) {
             e.printStackTrace();
@@ -225,18 +206,18 @@ public class PwdManagerClient {
         LocalPassword[] array = new LocalPassword[decipheredData.size()];
         array = decipheredData.toArray(array);
         Arrays.sort(array);
-        if(array[0].getVersion() > getVersion(array[0].getDomain(), array[0].getUsername())){
+        if (array[0].getVersion() > getVersion(array[0].getDomain(), array[0].getUsername())) {
             System.out.println("Server version is greater than the client. This can occur in a sync problem. " +
                     "Do you want to update your version records? [Y/n]");
             Scanner scanner = new Scanner(System.in);
-            if(scanner.nextLine().equalsIgnoreCase("y")){
+            if (scanner.nextLine().equalsIgnoreCase("y")) {
                 setVersion(array[0].getDomain(), array[0].getUsername(), array[0].getVersion());
                 System.out.println("Version updated!");
-            }else if(scanner.nextLine().equalsIgnoreCase("n")){
+            } else if (scanner.nextLine().equalsIgnoreCase("n")) {
                 System.out.println("Skip updated!");
-            }else
+            } else
                 System.out.println("Assuming default: Skip Update");
-        }else
+        } else
             setVersion(array[0].getDomain(), array[0].getUsername(), array[0].getVersion());
         System.out.println("Password Selected:\n" + array[0]);
         return array[0];
@@ -392,6 +373,15 @@ public class PwdManagerClient {
 
     private boolean isValidSig(PublicKey serverPublicKey, String[] myFields, String reqSignature) throws NoSuchAlgorithmException, InvalidKeyException, SignatureException {
         return cryptoManager.isValidSig(serverPublicKey, myFields, reqSignature);
+    }
+
+    private String generateFingerprint(String publicKey) throws NoSuchAlgorithmException {
+        byte[] pubKey = publicKey.getBytes(StandardCharsets.UTF_8);
+        return cryptoManager.convertBinaryToBase64(cryptoManager.digest(pubKey));
+    }
+
+    private boolean isValidFingerprint(String publicKey, String receivedFingerprint) throws NoSuchAlgorithmException {
+        return this.generateFingerprint(publicKey).equals(receivedFingerprint);
     }
 
     private void loadIvs() throws NoSuchAlgorithmException {
