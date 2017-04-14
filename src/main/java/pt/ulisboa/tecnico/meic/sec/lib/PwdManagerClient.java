@@ -124,9 +124,27 @@ public class PwdManagerClient {
                     cryptoManager.convertBinaryToBase64(signFields(fieldsToSend))
             );
 
-            call.putPassword(pwdToRegister);
+            Password[] retrieved = call.putPassword(pwdToRegister);
 
-            // TODO Bernardo
+            // If any response is insecure, we delete it.
+            for (int i = 0; i < retrieved.length; i++) {
+                Password p = retrieved[i];
+                if (p != null) {
+                    try {
+                        verifyServersSignature(p);
+                        verifyServersIntegrity(publicKey, p);
+                        verifyFreshness(p);
+                    } catch (InvalidKeySpecException | NoSuchAlgorithmException | SignatureException |
+                            InvalidKeyException | ServersSignatureNotValidException e) {
+                        retrieved[i] = null;
+                    } catch (ServersIntegrityException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+
+            if (!enoughResponses(retrieved)) throw new NotEnoughResponsesConsensusException();
+
         } catch (InvalidKeyException | InvalidAlgorithmParameterException | KeyStoreException |
                 NoSuchAlgorithmException | UnrecoverableKeyException | SignatureException |
                 IllegalBlockSizeException | BadPaddingException | NoSuchPaddingException |
