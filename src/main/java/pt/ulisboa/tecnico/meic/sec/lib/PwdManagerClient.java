@@ -54,20 +54,17 @@ public class PwdManagerClient {
         call = new ServerCallsPool();
         cryptoManager = new CryptoManager();
         loadIvs();
-        loadUUID();
+        loadDeviceId();
     }
 
-    // Only for JUnit
-    void init(KeyStore keyStore, String asymAlias, char[] asymPwd, String symAlias, char[] symPwd,
-              SingleServerCalls serverCalls) throws NoSuchAlgorithmException {
-        init(keyStore, asymAlias, asymPwd, symAlias, symPwd);
-        //call = serverCalls;
-        ivMap = new TreeMap<>();
-    }
-
-    // Necessary to Mockup
-    protected void setServerCalls(SingleServerCalls serverCalls) {
-        //this.call = serverCalls;
+    private void loadDeviceId() {
+        try (ObjectInputStream in = new ObjectInputStream(new BufferedInputStream(new FileInputStream(UUID_DAT)))) {
+            myDeviceId = (UUID) in.readObject();
+        } catch (ClassNotFoundException | IOException e) {
+            e.printStackTrace();
+            System.err.println(e.getMessage() + "\nGenerating UUID random.");
+            myDeviceId = UUID.randomUUID();
+        }
     }
 
     public void register_user() {
@@ -114,17 +111,21 @@ public class PwdManagerClient {
                     String.valueOf(cryptoManager.getActualTimestamp().getTime()),
                     cryptoManager.convertBinaryToBase64(cryptoManager.generateNonce(32)),
             };
+
+            String iv = new String(retrieveIV(domain, username), "US-ASCII");
+
             Password pwdToRegister = new Password(
-                    fieldsToSend[0],
-                    fieldsToSend[1],
-                    fieldsToSend[2],
-                    fieldsToSend[3],
-                    fieldsToSend[4],
-                    fieldsToSend[5],
-                    fieldsToSend[6],
-                    fieldsToSend[7],
-                    fieldsToSend[8],
-                    cryptoManager.convertBinaryToBase64(signFields(fieldsToSend))
+                    fieldsToSend[0], // pubKey
+                    fieldsToSend[1], // domain
+                    fieldsToSend[2], // username
+                    fieldsToSend[3], // password
+                    fieldsToSend[4], // versionNumber
+                    fieldsToSend[5], // deviceId
+                    fieldsToSend[6], // pwdSignature
+                    iv,
+                    fieldsToSend[7], // timestamp
+                    fieldsToSend[8], // nonce
+                    cryptoManager.convertBinaryToBase64(signFields(fieldsToSend)) // reqSignature
             );
 
             Password[] retrieved = call.putPassword(pwdToRegister);
@@ -170,10 +171,10 @@ public class PwdManagerClient {
             };
 
             Password pwdToRetrieve = new Password(
-                    fieldsToSend[0],
-                    fieldsToSend[1],
-                    fieldsToSend[2],
-                    fieldsToSend[3],
+                    fieldsToSend[0], // pubKey
+                    fieldsToSend[1], // domain
+                    fieldsToSend[2], // username
+                    fieldsToSend[3], // pwdSignature
                     fieldsToSend[4],
                     fieldsToSend[5],
                     cryptoManager.convertBinaryToBase64(signFields(fieldsToSend))
@@ -321,20 +322,26 @@ public class PwdManagerClient {
     private String[] encryptFields(String domain, String username, String password) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidAlgorithmParameterException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException, UnrecoverableKeyException, KeyStoreException {
         byte[] iv = retrieveIV(domain, username); // this initializes the versionNumber if needed.
         int version = getVersion(domain, username) + 1;
+
         setVersion(domain, username, version);
+
         String[] stuff = new String[]{domain,
                 username,
                 password,
                 String.valueOf(version),
                 myDeviceId.toString()};
         String[] encryptedStuff = new String[stuff.length];
+
         for (int i = 0; i < stuff.length && i < encryptedStuff.length; i++) {
             encryptedStuff[i] = cryptoManager.convertBinaryToBase64(
-                    cryptoManager.runAES(stuff[i].getBytes(),
-                            CryptoUtilities.getAESKeyFromKeystore(keyStore, symAlias, symPwd),
-                            iv,
-                            Cipher.ENCRYPT_MODE));
+                    cryptoManager.runAES(
+                        stuff[i].getBytes(),
+                        CryptoUtilities.getAESKeyFromKeystore(keyStore, symAlias, symPwd),
+                        iv,
+                        Cipher.ENCRYPT_MODE
+                    ));
         }
+
         return encryptedStuff;
     }
 
@@ -375,7 +382,6 @@ public class PwdManagerClient {
         boolean validTime = cryptoManager.isTimestampAndNonceValid(new Timestamp(Long.valueOf(retrieved.getTimestamp())),
                 cryptoManager.convertBase64ToBinary(retrieved.getNonce()));
         if (!validTime) {
-            //System.out.println("Message not fresh!");
             throw new MessageNotFreshException();
         }
     }
@@ -435,13 +441,16 @@ public class PwdManagerClient {
         }
     }
 
-    private void loadUUID() {
-        try (ObjectInputStream in = new ObjectInputStream(new BufferedInputStream(new FileInputStream(UUID_DAT)))) {
-            myDeviceId = (UUID) in.readObject();
-        } catch (ClassNotFoundException | IOException e) {
-            e.printStackTrace();
-            System.err.println(e.getMessage() + "\nGenerating UUID random.");
-            myDeviceId = UUID.randomUUID();
-        }
+    // Only for JUnit
+    void init(KeyStore keyStore, String asymAlias, char[] asymPwd, String symAlias, char[] symPwd,
+              SingleServerCalls serverCalls) throws NoSuchAlgorithmException {
+        init(keyStore, asymAlias, asymPwd, symAlias, symPwd);
+        //call = serverCalls;
+        ivMap = new TreeMap<>();
+    }
+
+    // Necessary to Mockup
+    protected void setServerCalls(SingleServerCalls serverCalls) {
+        //this.call = serverCalls;
     }
 }

@@ -9,11 +9,12 @@ public class Password {
     protected String versionNumber;
     protected String deviceId;
     protected String pwdSignature;
+    protected String iv;
     protected String timestamp;
     protected String nonce;
     protected String reqSignature;
 
-    public Password(String publicKey, String domain, String username, String password, String versionNumber, String deviceId, String pwdSignature, String timestamp, String nonce, String reqSignature) {
+    public Password(String publicKey, String domain, String username, String password, String versionNumber, String deviceId, String pwdSignature, String iv, String timestamp, String nonce, String reqSignature) {
         this.publicKey = publicKey;
         this.domain = domain;
         this.username = username;
@@ -21,31 +22,7 @@ public class Password {
         this.versionNumber = versionNumber;
         this.deviceId = deviceId;
         this.pwdSignature = pwdSignature;
-        this.timestamp = timestamp;
-        this.nonce = nonce;
-        this.reqSignature = reqSignature;
-    }
-
-    @Deprecated
-    public Password(String publicKey, String domain, String username, String password, String versionNumber, String pwdSignature, String timestamp, String nonce, String reqSignature) {
-        this.publicKey = publicKey;
-        this.domain = domain;
-        this.username = username;
-        this.password = password;
-        this.versionNumber = versionNumber;
-        this.pwdSignature = pwdSignature;
-        this.timestamp = timestamp;
-        this.nonce = nonce;
-        this.reqSignature = reqSignature;
-    }
-
-    @Deprecated
-    public Password(String publicKey, String domain, String username, String password, String pwdSignature, String timestamp, String nonce, String reqSignature) {
-        this.publicKey = publicKey;
-        this.domain = domain;
-        this.username = username;
-        this.password = password;
-        this.pwdSignature = pwdSignature;
+        this.iv = iv;
         this.timestamp = timestamp;
         this.nonce = nonce;
         this.reqSignature = reqSignature;
@@ -87,6 +64,10 @@ public class Password {
 
     public String getPwdSignature() {
         return pwdSignature;
+    }
+
+    public String getIv() {
+        return iv;
     }
 
     public String getTimestamp() {
