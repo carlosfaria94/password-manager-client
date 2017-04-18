@@ -136,10 +136,9 @@ public class PwdManagerClient {
                     try {
                         verifyEverything(publicKey, p);
                     } catch (InvalidKeySpecException | NoSuchAlgorithmException | SignatureException |
-                            InvalidKeyException | ServersSignatureNotValidException e) {
+                            InvalidKeyException | ServersSignatureNotValidException|
+                            ServersIntegrityException | MessageNotFreshException e) {
                         retrieved[i] = null;
-                    } catch (ServersIntegrityException e) {
-                        e.printStackTrace();
                     }
                 }
             }
@@ -192,7 +191,8 @@ public class PwdManagerClient {
                         String[] fields = decipherFields(domain, username, p);
                         decipheredData.add(new LocalPassword(fields[0], fields[1], fields[2], fields[3], fields[4]));
                     } catch (InvalidKeySpecException | NoSuchAlgorithmException | SignatureException |
-                            InvalidKeyException | ServersSignatureNotValidException e) {
+                            InvalidKeyException | ServersSignatureNotValidException
+                            | MessageNotFreshException e) {
                         retrieved[i] = null;
                     }
                 }
@@ -253,7 +253,7 @@ public class PwdManagerClient {
         }
     }
 
-    private void verifyEverything(PublicKey publicKey, Password p) throws InvalidKeySpecException, NoSuchAlgorithmException, InvalidKeyException, SignatureException, ServersSignatureNotValidException, ServersIntegrityException {
+    private void verifyEverything(PublicKey publicKey, Password p) throws InvalidKeySpecException, NoSuchAlgorithmException, InvalidKeyException, SignatureException, ServersSignatureNotValidException, ServersIntegrityException, MessageNotFreshException {
         verifyServersSignature(p);
         verifyFreshness(p);
         verifyServersIntegrity(publicKey, p);
@@ -370,7 +370,7 @@ public class PwdManagerClient {
         return encryptedStuff;
     }
 
-    private void verifyFreshness(Password retrieved) {
+    private void verifyFreshness(Password retrieved) throws MessageNotFreshException {
         // Check Freshness
         boolean validTime = cryptoManager.isTimestampAndNonceValid(new Timestamp(Long.valueOf(retrieved.getTimestamp())),
                 cryptoManager.convertBase64ToBinary(retrieved.getNonce()));
