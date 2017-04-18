@@ -7,11 +7,26 @@ public class Password {
     protected String username;
     protected String password;
     protected String versionNumber;
+    protected String deviceId;
     protected String pwdSignature;
     protected String timestamp;
     protected String nonce;
     protected String reqSignature;
 
+    public Password(String publicKey, String domain, String username, String password, String versionNumber, String deviceId, String pwdSignature, String timestamp, String nonce, String reqSignature) {
+        this.publicKey = publicKey;
+        this.domain = domain;
+        this.username = username;
+        this.password = password;
+        this.versionNumber = versionNumber;
+        this.deviceId = deviceId;
+        this.pwdSignature = pwdSignature;
+        this.timestamp = timestamp;
+        this.nonce = nonce;
+        this.reqSignature = reqSignature;
+    }
+
+    @Deprecated
     public Password(String publicKey, String domain, String username, String password, String versionNumber, String pwdSignature, String timestamp, String nonce, String reqSignature) {
         this.publicKey = publicKey;
         this.domain = domain;
@@ -24,6 +39,7 @@ public class Password {
         this.reqSignature = reqSignature;
     }
 
+    @Deprecated
     public Password(String publicKey, String domain, String username, String password, String pwdSignature, String timestamp, String nonce, String reqSignature) {
         this.publicKey = publicKey;
         this.domain = domain;
@@ -47,6 +63,10 @@ public class Password {
 
     public String getVersionNumber() {
         return versionNumber;
+    }
+
+    public String getDeviceId() {
+        return deviceId;
     }
 
     public String getPublicKey() {
@@ -89,6 +109,7 @@ public class Password {
                 ", username='" + username + '\'' +
                 ", password='" + password + '\'' +
                 ", versionNumber='" + versionNumber + '\'' +
+                ", deviceId='" + deviceId + '\'' +
                 ", pwdSignature='" + pwdSignature + '\'' +
                 ", timestamp='" + timestamp + '\'' +
                 ", nonce='" + nonce + '\'' +

@@ -26,6 +26,7 @@ public class PwdManagerClient {
     private static final int INITIAL_VERSION = 0;
     private static final int BYTES_IV = 16;
     private static final String IV_HASH_DAT = "ivhash.dat";
+    private static final String UUID_DAT = "uuid.dat";
 
     private transient KeyStore keyStore;
     private transient String asymAlias;
@@ -36,6 +37,7 @@ public class PwdManagerClient {
     private TreeMap<ImmutablePair<String, String>, MutablePair<byte[], Integer>> ivMap;
     private CryptoManager cryptoManager;
     private ServerCallsPool call;
+    private UUID myDeviceId;
 
     public String helloWorld() {
         return "Hello World. I'm a Password Manager Client";
@@ -49,11 +51,20 @@ public class PwdManagerClient {
         this.symAlias = symAlias;
         this.symPwd = symPwd;
 
-        // Pick type of ServerCalls
         call = new ServerCallsPool();
-
         cryptoManager = new CryptoManager();
         loadIvs();
+        loadUUID();
+    }
+
+    private void loadUUID() {
+        try (ObjectInputStream in = new ObjectInputStream(new BufferedInputStream(new FileInputStream(UUID_DAT)))) {
+            myDeviceId = (UUID) in.readObject();
+        } catch (ClassNotFoundException | IOException e) {
+            e.printStackTrace();
+            System.err.println(e.getMessage() + "\nGenerating UUID random.");
+            myDeviceId = UUID.randomUUID();
+        }
     }
 
     // Only for JUnit
@@ -108,6 +119,7 @@ public class PwdManagerClient {
                     encryptedStuff[1], // username
                     encryptedStuff[2], // password
                     encryptedStuff[3], // versionNumber
+                    encryptedStuff[4], // deviceId
                     cryptoManager.convertBinaryToBase64(signFields(encryptedStuff)),
                     String.valueOf(cryptoManager.getActualTimestamp().getTime()),
                     cryptoManager.convertBinaryToBase64(cryptoManager.generateNonce(32)),
@@ -121,6 +133,7 @@ public class PwdManagerClient {
                     fieldsToSend[5],
                     fieldsToSend[6],
                     fieldsToSend[7],
+                    fieldsToSend[8],
                     cryptoManager.convertBinaryToBase64(signFields(fieldsToSend))
             );
 
@@ -131,9 +144,7 @@ public class PwdManagerClient {
                 Password p = retrieved[i];
                 if (p != null) {
                     try {
-                        verifyServersSignature(p);
-                        verifyServersIntegrity(publicKey, p);
-                        verifyFreshness(p);
+                        verifyEverything(publicKey, p);
                     } catch (InvalidKeySpecException | NoSuchAlgorithmException | SignatureException |
                             InvalidKeyException | ServersSignatureNotValidException e) {
                         retrieved[i] = null;
@@ -187,9 +198,7 @@ public class PwdManagerClient {
                 Password p = retrieved[i];
                 if (p != null) {
                     try {
-                        verifyServersSignature(p);
-                        verifyServersIntegrity(publicKey, p);
-                        verifyFreshness(p);
+                        verifyEverything(publicKey, p);
                         String[] fields = decipherFields(domain, username, p);
                         decipheredData.add(new LocalPassword(fields[0], fields[1], fields[2], fields[3]));
                     } catch (InvalidKeySpecException | NoSuchAlgorithmException | SignatureException |
@@ -203,7 +212,7 @@ public class PwdManagerClient {
 
             LocalPassword[] localPasswordArray = sortForMostRecentPassword(decipheredData);
             updateLocalPasswordVersion(localPasswordArray[0]);
-
+            // ver se houve processos diferentes
             // Atomic (1, N) Register
             // #writeYourReads
             if(localPasswordArray[localPasswordArray.length - 1].getVersion() != localPasswordArray[0].getVersion())
@@ -220,6 +229,12 @@ public class PwdManagerClient {
             System.err.println(e.getMessage());
         }
         return password;
+    }
+
+    private void verifyEverything(PublicKey publicKey, Password p) throws InvalidKeySpecException, NoSuchAlgorithmException, InvalidKeyException, SignatureException, ServersSignatureNotValidException, ServersIntegrityException {
+        verifyServersSignature(p);
+        verifyFreshness(p);
+        verifyServersIntegrity(publicKey, p);
     }
 
     private LocalPassword[] sortForMostRecentPassword(ArrayList<LocalPassword> decipheredData) {
@@ -309,7 +324,8 @@ public class PwdManagerClient {
         String[] stuff = new String[]{domain,
                 username,
                 password,
-                String.valueOf(version)};
+                String.valueOf(version),
+                myDeviceId.toString()};
         String[] encryptedStuff = new String[stuff.length];
         for (int i = 0; i < stuff.length && i < encryptedStuff.length; i++) {
             encryptedStuff[i] = cryptoManager.convertBinaryToBase64(
