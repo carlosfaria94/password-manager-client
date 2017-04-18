@@ -202,13 +202,16 @@ public class PwdManagerClient {
 
             if (!enoughResponses(retrieved)) throw new NotEnoughResponsesConsensusException();
 
-            LocalPassword localPassword = getMostRecentPassword(decipheredData);
+            LocalPassword[] localPasswordArray = sortForMostRecentPassword(decipheredData);
+            updateLocalPasswordVersion(localPasswordArray[0]);
 
             // Atomic (1, N) Register
             // #writeYourReads
-            save_password(localPassword.getDomain(), localPassword.getUsername(), localPassword.getPassword());
+            if(localPasswordArray[localPasswordArray.length - 1].getVersion() != localPasswordArray[0].getVersion())
+                save_password(localPasswordArray[0].getDomain(), localPasswordArray[0].getUsername(),
+                        localPasswordArray[0].getPassword());
 
-            password = localPassword.getPassword();
+            password = localPasswordArray[0].getPassword();
 
         } catch (InvalidKeyException | InvalidAlgorithmParameterException | KeyStoreException |
                 NoSuchAlgorithmException | UnrecoverableKeyException | SignatureException |
@@ -220,26 +223,29 @@ public class PwdManagerClient {
         return password;
     }
 
-    private LocalPassword getMostRecentPassword(ArrayList<LocalPassword> decipheredData) {
+    private LocalPassword[] sortForMostRecentPassword(ArrayList<LocalPassword> decipheredData) {
         // Sort to get the most recent version
         LocalPassword[] array = new LocalPassword[decipheredData.size()];
         array = decipheredData.toArray(array);
         Arrays.sort(array);
-        if(array[0].getVersion() > getVersion(array[0].getDomain(), array[0].getUsername())){
+        return array;
+    }
+
+    private void updateLocalPasswordVersion(LocalPassword localPassword) {
+        if(localPassword.getVersion() > getVersion(localPassword.getDomain(), localPassword.getUsername())){
             System.out.println("Server version is greater than the client. This can occur in a sync problem. " +
                     "Do you want to update your version records? [Y/n]");
             Scanner scanner = new Scanner(System.in);
             if(scanner.nextLine().equalsIgnoreCase("y")){
-                setVersion(array[0].getDomain(), array[0].getUsername(), array[0].getVersion());
+                setVersion(localPassword.getDomain(), localPassword.getUsername(), localPassword.getVersion());
                 System.out.println("Version updated!");
             }else if(scanner.nextLine().equalsIgnoreCase("n")){
                 System.out.println("Skip updated!");
             }else
                 System.out.println("Assuming default: Skip Update");
         }else
-            setVersion(array[0].getDomain(), array[0].getUsername(), array[0].getVersion());
-        System.out.println("Password Selected:\n" + array[0]);
-        return array[0];
+            setVersion(localPassword.getDomain(), localPassword.getUsername(), localPassword.getVersion());
+        System.out.println("Password Selected:\n" + localPassword);
     }
 
     private String[] decipherFields(String domain, String username, Password p) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidAlgorithmParameterException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException, UnrecoverableKeyException, KeyStoreException {
