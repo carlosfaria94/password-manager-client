@@ -1,21 +1,21 @@
 package pt.ulisboa.tecnico.meic.sec.lib;
 
-/**
- * Created by francisco on 10/04/2017.
- */
+import java.util.UUID;
+
 public class LocalPassword implements Comparable{
 
     private String domain;
     private final String username;
     private final String password;
     private final int version;
+    private UUID deviceId;
 
-    public LocalPassword(String domain, String username, String password, String version) {
-
+    public LocalPassword(String domain, String username, String password, String version, String deviceId) {
         this.domain = domain;
         this.username = username;
         this.password = password;
         this.version = Integer.valueOf(version);
+        this.deviceId = UUID.fromString(deviceId);
     }
 
     public String getDomain() {
@@ -34,11 +34,19 @@ public class LocalPassword implements Comparable{
         return version;
     }
 
+    public UUID getDeviceId() {
+        return deviceId;
+    }
+
     @Override
     public int compareTo(Object o) {
-        if(o instanceof LocalPassword)
-            return ((LocalPassword)o).getVersion() - version;
-        else throw new RuntimeException("Not LocalPassword");
+        if(o instanceof LocalPassword) {
+            LocalPassword other = (LocalPassword) o;
+            int comparison = other.getVersion() - version;
+            if(comparison == 0){
+                return other.getDeviceId().compareTo(this.deviceId);
+            }else return comparison;
+        } else throw new RuntimeException("Not LocalPassword");
     }
 
     @Override
@@ -47,7 +55,8 @@ public class LocalPassword implements Comparable{
                 "domain='" + domain + '\'' +
                 ", username='" + username + '\'' +
                 ", password='" + password + '\'' +
-                ", version=" + version +
+                ", version=" + version + '\'' +
+                ", deviceId=" + deviceId +
                 '}';
     }
 

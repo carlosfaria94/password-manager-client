@@ -1,13 +1,12 @@
 package pt.ulisboa.tecnico.meic.sec.lib;
 
-import junit.framework.TestCase;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import pt.ulisboa.tecnico.meic.sec.CryptoUtilities;
 import pt.ulisboa.tecnico.meic.sec.lib.exception.ServersIntegrityException;
 import pt.ulisboa.tecnico.meic.sec.lib.exception.ServersSignatureNotValidException;
-import sun.util.resources.cldr.ka.LocaleNames_ka;
 
 import java.io.IOException;
 import java.security.KeyStore;
@@ -15,9 +14,10 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.util.Arrays;
+import java.util.UUID;
 
 
-public class PwdManagerClientTest extends TestCase {
+public class PwdManagerClientTest {
     private static final String BATATA = "batata";
     private PwdManagerClient pwdManagerClient;
 
@@ -39,20 +39,20 @@ public class PwdManagerClientTest extends TestCase {
     public void testSimpleSave() throws ServersIntegrityException, ServersSignatureNotValidException {
         pwdManagerClient.save_password("youtube.com", "unicornio", "arcoiris");
         String pwd = pwdManagerClient.retrieve_password("youtube.com", "unicornio");
-        assertEquals(pwd, "arcoiris");
+        Assert.assertEquals(pwd, "arcoiris");
     }
 
     @Test
     public void testSimpleRetrieve() throws ServersIntegrityException, ServersSignatureNotValidException {
         String pwd = pwdManagerClient.retrieve_password("youtube.com", "unicornio");
-        assertEquals(pwd, "arcoiris");
+        Assert.assertEquals(pwd, "arcoiris");
     }
 
     @Test
     public void testLoopRetrieve() throws ServersIntegrityException, ServersSignatureNotValidException {
         for (int i = 0; i < 4; i++) {
             String pwd = pwdManagerClient.retrieve_password("youtube.com", "unicornio");
-            assertEquals(pwd, "arcoiris");
+            Assert.assertEquals(pwd, "arcoiris");
         }
     }
 
@@ -63,9 +63,9 @@ public class PwdManagerClientTest extends TestCase {
         pwdManagerClient.save_password("fenix.ist.utl.pt", "huckleberry_finn", password);
 
         String pwd = pwdManagerClient.retrieve_password("facebook.com", "tomsawyer");
-        assertEquals(pwd, password);
+        Assert.assertEquals(pwd, password);
         String pwd2 = pwdManagerClient.retrieve_password("fenix.ist.utl.pt", "huckleberry_finn");
-        assertEquals(pwd2, password);
+        Assert.assertEquals(pwd2, password);
     }
 
     @Test
@@ -75,9 +75,9 @@ public class PwdManagerClientTest extends TestCase {
         pwdManagerClient.save_password("pokecenter.net", "ash", password);
 
         String pwd = pwdManagerClient.retrieve_password("pokedex.org", "ash");
-        assertEquals(pwd, password);
+        Assert.assertEquals(pwd, password);
         String pwd2 = pwdManagerClient.retrieve_password("pokecenter.net", "ash");
-        assertEquals(pwd2, password);
+        Assert.assertEquals(pwd2, password);
     }
 
     @Test
@@ -87,9 +87,9 @@ public class PwdManagerClientTest extends TestCase {
         pwdManagerClient.save_password("supersecret.portugal.pt", "companhia", password);
 
         String pwd = pwdManagerClient.retrieve_password("supersecret.portugal.pt", "batatinha");
-        assertEquals(pwd, password);
+        Assert.assertEquals(pwd, password);
         String pwd2 = pwdManagerClient.retrieve_password("supersecret.portugal.pt", "companhia");
-        assertEquals(pwd2, password);
+        Assert.assertEquals(pwd2, password);
     }
 
     @Test
@@ -97,19 +97,24 @@ public class PwdManagerClientTest extends TestCase {
         final String password = "sec";
         pwdManagerClient.save_password("youtube.com", "ist", password);
         String pwd = pwdManagerClient.retrieve_password("youtube.com", "ist");
-        assertEquals(pwd, password);
+        Assert.assertEquals(pwd, password);
         pwdManagerClient.save_password("youtube.com", "ist", password + "123");
         String pwd2 = pwdManagerClient.retrieve_password("youtube.com", "ist");
-        assertEquals(pwd2, password + "123");
+        Assert.assertEquals(pwd2, password + "123");
     }
 
     @Test
     public void testSortLocalPasswords(){
         LocalPassword[] l = new LocalPassword[2];
-        LocalPassword test = new LocalPassword("123", "123", "0000", "2");
-        l[0] = new LocalPassword("123", "123", "133", "1");
+        LocalPassword test = new LocalPassword("123", "123", "0000",
+                "2", UUID.nameUUIDFromBytes("ola".getBytes()).toString());
+        l[0] = new LocalPassword("123", "123", "133", "1",
+                UUID.nameUUIDFromBytes("adeus".getBytes()).toString());
         l[1] = test;
+        for(LocalPassword ll : l){
+            System.out.println(ll);
+        }
         Arrays.sort(l);
-        assertEquals(l[0], test);
+        Assert.assertEquals(l[0], test);
     }
 }

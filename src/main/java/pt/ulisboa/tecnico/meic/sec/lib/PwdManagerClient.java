@@ -57,16 +57,6 @@ public class PwdManagerClient {
         loadUUID();
     }
 
-    private void loadUUID() {
-        try (ObjectInputStream in = new ObjectInputStream(new BufferedInputStream(new FileInputStream(UUID_DAT)))) {
-            myDeviceId = (UUID) in.readObject();
-        } catch (ClassNotFoundException | IOException e) {
-            e.printStackTrace();
-            System.err.println(e.getMessage() + "\nGenerating UUID random.");
-            myDeviceId = UUID.randomUUID();
-        }
-    }
-
     // Only for JUnit
     void init(KeyStore keyStore, String asymAlias, char[] asymPwd, String symAlias, char[] symPwd,
               SingleServerCalls serverCalls) throws NoSuchAlgorithmException {
@@ -200,7 +190,7 @@ public class PwdManagerClient {
                     try {
                         verifyEverything(publicKey, p);
                         String[] fields = decipherFields(domain, username, p);
-                        decipheredData.add(new LocalPassword(fields[0], fields[1], fields[2], fields[3]));
+                        decipheredData.add(new LocalPassword(fields[0], fields[1], fields[2], fields[3], fields[4]));
                     } catch (InvalidKeySpecException | NoSuchAlgorithmException | SignatureException |
                             InvalidKeyException | ServersSignatureNotValidException e) {
                         retrieved[i] = null;
@@ -229,6 +219,38 @@ public class PwdManagerClient {
             System.err.println(e.getMessage());
         }
         return password;
+    }
+
+    public void close() {
+        Thread t = new Thread(() -> {
+            try (ObjectOutputStream out = new ObjectOutputStream(
+                    new BufferedOutputStream(new FileOutputStream(IV_HASH_DAT)))) {
+                out.writeObject(ivMap);
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+        });
+        Thread t2 = new Thread(() -> {
+            try (ObjectOutputStream out = new ObjectOutputStream(
+                    new BufferedOutputStream(new FileOutputStream(UUID_DAT)))) {
+                out.writeObject(myDeviceId);
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+        });
+        t.start();
+        t2.start();
+        keyStore = null;
+        asymAlias = null;
+        asymPwd = null;
+        symAlias = null;
+        symPwd = null;
+        try {
+            t.join();
+            t2.join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     private void verifyEverything(PublicKey publicKey, Password p) throws InvalidKeySpecException, NoSuchAlgorithmException, InvalidKeyException, SignatureException, ServersSignatureNotValidException, ServersIntegrityException {
@@ -267,7 +289,8 @@ public class PwdManagerClient {
                 new String(decipherField(domain, username, p.getDomain())),
                 new String(decipherField(domain, username, p.getUsername())),
                 new String(decipherField(domain, username, p.getPassword())),
-                new String(decipherField(domain, username, p.getVersionNumber()))};
+                new String(decipherField(domain, username, p.getVersionNumber())),
+                new String(decipherField(domain, username, p.getDeviceId()))};
     }
 
     private byte[] decipherField(String domain, String username, String field) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidAlgorithmParameterException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException, UnrecoverableKeyException, KeyStoreException {
@@ -283,28 +306,6 @@ public class PwdManagerClient {
         *  The expression (2.0 / 3.0) * n - 1.0 / 6.0) is N = 3f + 1 solved in order to F
         */
         return countNotNull(retrieved) > (2.0 / 3.0) * n - 1.0 / 6.0;
-    }
-
-    public void close() {
-        Thread t = new Thread(() -> {
-            try (ObjectOutputStream out = new ObjectOutputStream(
-                    new BufferedOutputStream(new FileOutputStream(IV_HASH_DAT)))) {
-                out.writeObject(ivMap);
-            } catch (IOException ex) {
-                ex.printStackTrace();
-            }
-        });
-        t.start();
-        keyStore = null;
-        asymAlias = null;
-        asymPwd = null;
-        symAlias = null;
-        symPwd = null;
-        try {
-            t.join();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
     }
 
     private int countNotNull(Object[] array) {
@@ -431,6 +432,16 @@ public class PwdManagerClient {
             e.printStackTrace();
             System.err.println(e.getMessage() + "\nStarting a new IV Table.");
             ivMap = new TreeMap<>();
+        }
+    }
+
+    private void loadUUID() {
+        try (ObjectInputStream in = new ObjectInputStream(new BufferedInputStream(new FileInputStream(UUID_DAT)))) {
+            myDeviceId = (UUID) in.readObject();
+        } catch (ClassNotFoundException | IOException e) {
+            e.printStackTrace();
+            System.err.println(e.getMessage() + "\nGenerating UUID random.");
+            myDeviceId = UUID.randomUUID();
         }
     }
 }
