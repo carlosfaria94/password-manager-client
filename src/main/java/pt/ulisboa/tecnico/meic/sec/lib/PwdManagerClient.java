@@ -112,20 +112,17 @@ public class PwdManagerClient {
                     cryptoManager.convertBinaryToBase64(cryptoManager.generateNonce(32)),
             };
 
-            String iv = new String(retrieveIV(domain, username), "US-ASCII");
-
             Password pwdToRegister = new Password(
-                    fieldsToSend[0], // pubKey
-                    fieldsToSend[1], // domain
-                    fieldsToSend[2], // username
-                    fieldsToSend[3], // password
-                    fieldsToSend[4], // versionNumber
-                    fieldsToSend[5], // deviceId
-                    fieldsToSend[6], // pwdSignature
-                    iv,
-                    fieldsToSend[7], // timestamp
-                    fieldsToSend[8], // nonce
-                    cryptoManager.convertBinaryToBase64(signFields(fieldsToSend)) // reqSignature
+                    fieldsToSend[0],
+                    fieldsToSend[1],
+                    fieldsToSend[2],
+                    fieldsToSend[3],
+                    fieldsToSend[4],
+                    fieldsToSend[5],
+                    fieldsToSend[6],
+                    fieldsToSend[7],
+                    fieldsToSend[8],
+                    cryptoManager.convertBinaryToBase64(signFields(fieldsToSend))
             );
 
             Password[] retrieved = call.putPassword(pwdToRegister);
@@ -322,23 +319,24 @@ public class PwdManagerClient {
     private String[] encryptFields(String domain, String username, String password) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidAlgorithmParameterException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException, UnrecoverableKeyException, KeyStoreException {
         byte[] iv = retrieveIV(domain, username); // this initializes the versionNumber if needed.
         int version = getVersion(domain, username) + 1;
-
         setVersion(domain, username, version);
 
-        String[] stuff = new String[]{domain,
+        String[] stuff = new String[]{
+                domain,
                 username,
                 password,
                 String.valueOf(version),
-                myDeviceId.toString()};
-        String[] encryptedStuff = new String[stuff.length];
+                myDeviceId.toString()
+        };
 
+        String[] encryptedStuff = new String[stuff.length];
         for (int i = 0; i < stuff.length && i < encryptedStuff.length; i++) {
             encryptedStuff[i] = cryptoManager.convertBinaryToBase64(
                     cryptoManager.runAES(
-                        stuff[i].getBytes(),
-                        CryptoUtilities.getAESKeyFromKeystore(keyStore, symAlias, symPwd),
-                        iv,
-                        Cipher.ENCRYPT_MODE
+                            stuff[i].getBytes(),
+                            CryptoUtilities.getAESKeyFromKeystore(keyStore, symAlias, symPwd),
+                            iv,
+                            Cipher.ENCRYPT_MODE
                     ));
         }
 
