@@ -4,7 +4,6 @@ import java.io.IOException;
 
 
 public class ServerCallsPool {
-
     private int initialPort = 3001;
     private int finalPort = 3004;
 
@@ -116,5 +115,10 @@ public class ServerCallsPool {
         }
 
         return passwordsResponse;
+    }
+
+    //Mockup purpose
+    public void setSingleServerCalls(SingleServerCalls[] singleServerCalls) {
+        this.singleServerCalls = singleServerCalls;
     }
 }
