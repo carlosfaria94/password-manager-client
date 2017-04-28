@@ -67,7 +67,7 @@ public class PwdManagerClient {
         }
     }
 
-    public void register_user() {
+    public void register_user() throws NotEnoughResponsesConsensusException {
         try {
             PublicKey publicKey = CryptoUtilities.getPublicKeyFromKeystore(keyStore, asymAlias, asymPwd);
             String publicKeyB64 = cryptoManager.convertBinaryToBase64(publicKey.getEncoded());
@@ -95,7 +95,8 @@ public class PwdManagerClient {
         }
     }
 
-    public void save_password(String domain, String username, String password) {
+    public void save_password(String domain, String username, String password)
+            throws NotEnoughResponsesConsensusException {
         try {
             PublicKey publicKey = CryptoUtilities.getPublicKeyFromKeystore(keyStore, asymAlias, asymPwd);
             String[] encryptedStuff = encryptFields(domain, username, password);
@@ -152,7 +153,7 @@ public class PwdManagerClient {
         }
     }
 
-    public String retrieve_password(String domain, String username) throws ServersIntegrityException, ServersSignatureNotValidException {
+    public String retrieve_password(String domain, String username) throws NotEnoughResponsesConsensusException {
         String password = "";
         try {
             PublicKey publicKey = CryptoUtilities.getPublicKeyFromKeystore(keyStore, asymAlias, asymPwd);
@@ -189,8 +190,8 @@ public class PwdManagerClient {
                         String[] fields = decipherFields(domain, username, p);
                         decipheredData.add(new LocalPassword(fields[0], fields[1], fields[2], fields[3], fields[4]));
                     } catch (InvalidKeySpecException | NoSuchAlgorithmException | SignatureException |
-                            InvalidKeyException | ServersSignatureNotValidException
-                            | MessageNotFreshException e) {
+                            InvalidKeyException | ServersSignatureNotValidException | MessageNotFreshException |
+                            ServersIntegrityException e) {
                         retrieved[i] = null;
                     }
                 }
@@ -440,15 +441,10 @@ public class PwdManagerClient {
     }
 
     // Only for JUnit
-    void init(KeyStore keyStore, String asymAlias, char[] asymPwd, String symAlias, char[] symPwd,
-              SingleServerCalls serverCalls) throws NoSuchAlgorithmException {
+    public void init(KeyStore keyStore, String asymAlias, char[] asymPwd, String symAlias, char[] symPwd,
+                     ServerCallsPool serverCalls) throws NoSuchAlgorithmException {
         init(keyStore, asymAlias, asymPwd, symAlias, symPwd);
-        //call = serverCalls;
+        call = serverCalls;
         ivMap = new TreeMap<>();
-    }
-
-    // Necessary to Mockup
-    protected void setServerCalls(SingleServerCalls serverCalls) {
-        //this.call = serverCalls;
     }
 }

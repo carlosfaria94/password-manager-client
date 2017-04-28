@@ -2,7 +2,6 @@ package pt.ulisboa.tecnico.meic.sec.lib;
 
 import java.io.IOException;
 
-
 public class ServerCallsPool {
     private int initialPort = 3001;
     private int finalPort = 3004;

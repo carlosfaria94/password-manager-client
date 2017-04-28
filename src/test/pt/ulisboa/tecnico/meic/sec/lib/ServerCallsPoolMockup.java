@@ -3,6 +3,14 @@ package pt.ulisboa.tecnico.meic.sec.lib;
 import java.security.NoSuchAlgorithmException;
 
 public class ServerCallsPoolMockup extends ServerCallsPool {
+    public ServerCallsPoolMockup(int goodNodes) throws NoSuchAlgorithmException {
+        this(goodNodes, 0,0);
+    }
+
+    public ServerCallsPoolMockup(int goodNodes, int faultyNullNodes) throws NoSuchAlgorithmException {
+        this(goodNodes, faultyNullNodes,0);
+    }
+
     public ServerCallsPoolMockup(int goodNodes, int faultyNullNodes, int faultyIntegrityNodes)
             throws NoSuchAlgorithmException {
         SingleServerCallsMockup[] pool =
