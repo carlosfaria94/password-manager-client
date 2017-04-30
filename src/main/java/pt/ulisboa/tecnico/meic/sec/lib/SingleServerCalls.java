@@ -16,20 +16,20 @@ public class SingleServerCalls {
     private String apiBaseUrl;
     private Gson json = new Gson();
 
-    public SingleServerCalls() {
+    SingleServerCalls() {
         apiBaseUrl = "http://localhost:3001";
     }
 
-    public SingleServerCalls(int port) {
+    SingleServerCalls(int port) {
         this.apiBaseUrl = "http://localhost:" + port;
     }
 
     /**
      * Register user in the server
      *
-     * @param user
-     * @return - null when user is not successful registered
-     * @throws IOException
+     * @param user - User
+     * @return User - null when user is not successful registered
+     * @throws IOException - when remote server fails to respond
      */
     public User register(User user) throws IOException {
         RequestBody body = RequestBody.create(JSON, json.toJson(user));
@@ -40,19 +40,18 @@ public class SingleServerCalls {
         Response response = client.newCall(request).execute();
 
         if (response.isSuccessful()) {
-            User newUser = json.fromJson(response.body().string(), User.class);
-            System.out.println("User successful registered: " + newUser.toString());
-            return newUser;
+            //System.out.println("User successful registered: " + newUser.toString());
+            return json.fromJson(response.body().string(), User.class);
         } else {
             switch (response.code()) {
                 case 409:
-                    System.out.println("User already registered.");
+                    //System.out.println("User already registered.");
                     break;
                 case 500:
-                    System.out.println("User not registered. Internal Server error.");
+                    //System.out.println("User not registered. Internal Server error.");
                     break;
                 default:
-                    System.out.println("User not registered.");
+                    //System.out.println("User not registered.");
                     break;
             }
             return null;
@@ -62,12 +61,12 @@ public class SingleServerCalls {
     /**
      * Create a new password in server or update
      *
-     * @param pwd
-     * @return
-     * @throws IOException
+     * @param pwd - Password
+     * @return Password
+     * @throws IOException - when remote server fails to respond
      */
     public Password putPassword(Password pwd) throws IOException {
-        System.out.println(pwd);
+        //System.out.println(pwd);
         RequestBody body = RequestBody.create(JSON, json.toJson(pwd));
         Request request = new Request.Builder()
                 .url(apiBaseUrl + "/password")
@@ -76,11 +75,10 @@ public class SingleServerCalls {
         Response response = client.newCall(request).execute();
 
         if (response.isSuccessful()) {
-            Password newPassword = json.fromJson(response.body().string(), Password.class);
-            System.out.println("Password successful registered: " + newPassword.toString());
-            return newPassword;
+            //System.out.println("Password successful registered: " + newPassword.toString());
+            return json.fromJson(response.body().string(), Password.class);
         } else {
-            System.out.println("Password not registered. HTTP Code: " + response.code());
+            //System.out.println("Password not registered. HTTP Code: " + response.code());
             return null;
         }
     }
@@ -96,11 +94,10 @@ public class SingleServerCalls {
         Response response = client.newCall(request).execute();
 
         if (response.isSuccessful()) {
-            Password pwdRetrieved = json.fromJson(response.body().string(), Password.class);
-            System.out.println("Password successful retrieved: " + pwdRetrieved.toString());
-            return pwdRetrieved;
+            //System.out.println("Password successful retrieved: " + pwdRetrieved.toString());
+            return json.fromJson(response.body().string(), Password.class);
         } else {
-            System.out.println("Password not retrieved. HTTP Code: " + response.code());
+            //System.out.println("Password not retrieved. HTTP Code: " + response.code());
             return null;
         }
     }

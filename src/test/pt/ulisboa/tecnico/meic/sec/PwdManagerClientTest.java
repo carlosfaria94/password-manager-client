@@ -7,8 +7,6 @@ import org.junit.Test;
 import pt.ulisboa.tecnico.meic.sec.lib.LocalPassword;
 import pt.ulisboa.tecnico.meic.sec.lib.PwdManagerClient;
 import pt.ulisboa.tecnico.meic.sec.lib.exception.NotEnoughResponsesConsensusException;
-import pt.ulisboa.tecnico.meic.sec.lib.exception.ServersIntegrityException;
-import pt.ulisboa.tecnico.meic.sec.lib.exception.ServersSignatureNotValidException;
 
 import java.io.IOException;
 import java.security.KeyStore;
@@ -21,13 +19,12 @@ import java.util.UUID;
 import static junit.framework.TestCase.fail;
 
 public class PwdManagerClientTest {
-    private static final String KEYSTORE_PASSWORD = "batata";
-    private static final int NUM_REPLICAS = 4;
+    static final String KEYSTORE_PASSWORD = "batata";
 
-    private PwdManagerClient client;
+    PwdManagerClient client;
 
     @Before
-    public void setUp() throws NoSuchAlgorithmException, CertificateException, KeyStoreException, IOException, NotEnoughResponsesConsensusException {
+    public void setUp() throws NoSuchAlgorithmException, CertificateException, KeyStoreException, IOException {
         client = new PwdManagerClient();
 
         KeyStore ks = CryptoUtilities.readKeystoreFile("keystore.jceks", KEYSTORE_PASSWORD.toCharArray());
@@ -47,38 +44,28 @@ public class PwdManagerClientTest {
             String pwd = client.retrieve_password("youtube.com", "unicornio");
             Assert.assertEquals(pwd, "arcoiris");
         } catch (NotEnoughResponsesConsensusException e) {
-            fail("NotEnoughResponsesConsensusException should have not be thrown");
             e.printStackTrace();
+            fail("NotEnoughResponsesConsensusException should have not be thrown");
         }
     }
 
     @Test
-    public void testSimpleRetrieve() throws ServersSignatureNotValidException, ServersIntegrityException {
+    public void testLoopRetrieve() {
         try {
-            String pwd = client.retrieve_password("youtube.com", "unicornio");
-            Assert.assertEquals(pwd, "arcoiris");
-        } catch (NotEnoughResponsesConsensusException e) {
-            fail("NotEnoughResponsesConsensusException should have not be thrown");
-            e.printStackTrace();
-        }
-    }
-
-    @Test
-    public void testLoopRetrieve() throws ServersIntegrityException, ServersSignatureNotValidException {
-        try {
+            client.save_password("youtube.com", "unicornio", "arcoiris");
             for (int i = 0; i < 4; i++) {
                 String pwd = client.retrieve_password("youtube.com", "unicornio");
                 Assert.assertEquals(pwd, "arcoiris");
             }
         }
         catch (NotEnoughResponsesConsensusException e) {
-            fail("NotEnoughResponsesConsensusException should have not be thrown");
             e.printStackTrace();
+            fail("NotEnoughResponsesConsensusException should have not been thrown");
         }
     }
 
     @Test
-    public void testSaveSamePasswordDifferentDomainAndUser() throws ServersIntegrityException, ServersSignatureNotValidException {
+    public void testSaveSamePasswordDifferentDomainAndUser() {
         try {
             final String password = "mississippi";
             client.save_password("facebook.com", "tomsawyer", password);
@@ -90,13 +77,13 @@ public class PwdManagerClientTest {
             Assert.assertEquals(pwd2, password);
         }
         catch (NotEnoughResponsesConsensusException e) {
-            fail("NotEnoughResponsesConsensusException should have not be thrown");
             e.printStackTrace();
+            fail("NotEnoughResponsesConsensusException should have not been thrown");
         }
     }
 
     @Test
-    public void testSaveSameUserAndPassword() throws ServersIntegrityException, ServersSignatureNotValidException {
+    public void testSaveSameUserAndPassword() {
         try {
             final String password = "pokemon-master";
             client.save_password("pokedex.org", "ash", password);
@@ -108,13 +95,13 @@ public class PwdManagerClientTest {
             Assert.assertEquals(pwd2, password);
         }
         catch (NotEnoughResponsesConsensusException e) {
-            fail("NotEnoughResponsesConsensusException should have not be thrown");
             e.printStackTrace();
+            fail("NotEnoughResponsesConsensusException should have not been thrown");
         }
     }
 
     @Test
-    public void testSaveSameDomain() throws ServersIntegrityException, ServersSignatureNotValidException {
+    public void testSaveSameDomain() {
         try {
             final String password = "portugal";
             client.save_password("supersecret.portugal.pt", "batatinha", password);
@@ -126,8 +113,8 @@ public class PwdManagerClientTest {
             Assert.assertEquals(pwd2, password);
         }
         catch (NotEnoughResponsesConsensusException e) {
-            fail("NotEnoughResponsesConsensusException should have not be thrown");
             e.printStackTrace();
+            fail("NotEnoughResponsesConsensusException should have not been thrown");
         }
     }
 
@@ -139,9 +126,9 @@ public class PwdManagerClientTest {
         l[0] = new LocalPassword("123", "123", "133", "1",
                 UUID.nameUUIDFromBytes("adeus".getBytes()).toString());
         l[1] = test;
-        for(LocalPassword ll : l){
+        /*for(LocalPassword ll : l){
             System.out.println(ll);
-        }
+        }*/
         Arrays.sort(l);
         Assert.assertEquals(l[0], test);
     }

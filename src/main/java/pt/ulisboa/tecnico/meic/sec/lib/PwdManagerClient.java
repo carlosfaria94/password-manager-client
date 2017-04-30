@@ -67,7 +67,7 @@ public class PwdManagerClient {
         }
     }
 
-    public void register_user() throws NotEnoughResponsesConsensusException {
+    public void register_user() {
         try {
             PublicKey publicKey = CryptoUtilities.getPublicKeyFromKeystore(keyStore, asymAlias, asymPwd);
             String publicKeyB64 = cryptoManager.convertBinaryToBase64(publicKey.getEncoded());
@@ -75,6 +75,7 @@ public class PwdManagerClient {
 
             User[] retrieved = call.register(user);
 
+            /*
             // If any response is insecure, we delete it.
             for (int i = 0; i < retrieved.length; i++) {
                 User u = retrieved[i];
@@ -88,6 +89,7 @@ public class PwdManagerClient {
             }
 
             if (!enoughResponses(retrieved)) throw new NotEnoughResponsesConsensusException();
+            */
 
         } catch (UnrecoverableKeyException | NoSuchAlgorithmException
                 | KeyStoreException | InvalidKeyException | SignatureException | IOException e) {
@@ -108,9 +110,9 @@ public class PwdManagerClient {
                     encryptedStuff[2], // password
                     encryptedStuff[3], // versionNumber
                     encryptedStuff[4], // deviceId
-                    cryptoManager.convertBinaryToBase64(signFields(encryptedStuff)),
-                    String.valueOf(cryptoManager.getActualTimestamp().getTime()),
-                    cryptoManager.convertBinaryToBase64(cryptoManager.generateNonce(32)),
+                    cryptoManager.convertBinaryToBase64(signFields(encryptedStuff)), //pwdSignature
+                    String.valueOf(cryptoManager.getActualTimestamp().getTime()), //timestamp
+                    cryptoManager.convertBinaryToBase64(cryptoManager.generateNonce(32)), //nonce
             };
 
             Password pwdToRegister = new Password(
@@ -123,7 +125,7 @@ public class PwdManagerClient {
                     fieldsToSend[6],
                     fieldsToSend[7],
                     fieldsToSend[8],
-                    cryptoManager.convertBinaryToBase64(signFields(fieldsToSend))
+                    cryptoManager.convertBinaryToBase64(signFields(fieldsToSend)) //reqSignature
             );
 
             Password[] retrieved = call.putPassword(pwdToRegister);
@@ -173,8 +175,8 @@ public class PwdManagerClient {
                     fieldsToSend[1], // domain
                     fieldsToSend[2], // username
                     fieldsToSend[3], // pwdSignature
-                    fieldsToSend[4],
-                    fieldsToSend[5],
+                    fieldsToSend[4], // timestamp
+                    fieldsToSend[5], // nonce
                     cryptoManager.convertBinaryToBase64(signFields(fieldsToSend))
             );
 
@@ -252,7 +254,9 @@ public class PwdManagerClient {
         }
     }
 
-    private void verifyEverything(PublicKey publicKey, Password p) throws InvalidKeySpecException, NoSuchAlgorithmException, InvalidKeyException, SignatureException, ServersSignatureNotValidException, ServersIntegrityException, MessageNotFreshException {
+    private void verifyEverything(PublicKey publicKey, Password p)
+            throws InvalidKeySpecException, NoSuchAlgorithmException, InvalidKeyException, SignatureException,
+            ServersSignatureNotValidException, ServersIntegrityException, MessageNotFreshException {
         verifyServersSignature(p);
         verifyFreshness(p);
         verifyServersIntegrity(publicKey, p);
@@ -280,10 +284,12 @@ public class PwdManagerClient {
                 System.out.println("Assuming default: Skip Update");
         }else
             setVersion(localPassword.getDomain(), localPassword.getUsername(), localPassword.getVersion());
-        System.out.println("Password Selected:\n" + localPassword);
+        //System.out.println("Password Selected:\n" + localPassword);
     }
 
-    private String[] decipherFields(String domain, String username, Password p) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidAlgorithmParameterException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException, UnrecoverableKeyException, KeyStoreException {
+    private String[] decipherFields(String domain, String username, Password p) throws
+            NoSuchAlgorithmException, NoSuchPaddingException, InvalidAlgorithmParameterException, InvalidKeyException,
+            BadPaddingException, IllegalBlockSizeException, UnrecoverableKeyException, KeyStoreException {
         return new String[]{
                 new String(decipherField(domain, username, p.getDomain())),
                 new String(decipherField(domain, username, p.getUsername())),
@@ -292,7 +298,10 @@ public class PwdManagerClient {
                 new String(decipherField(domain, username, p.getDeviceId()))};
     }
 
-    private byte[] decipherField(String domain, String username, String field) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidAlgorithmParameterException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException, UnrecoverableKeyException, KeyStoreException {
+    private byte[] decipherField(String domain, String username, String field)
+            throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidAlgorithmParameterException,
+            InvalidKeyException, BadPaddingException, IllegalBlockSizeException, UnrecoverableKeyException,
+            KeyStoreException {
         return cryptoManager.runAES(cryptoManager.convertBase64ToBinary(field),
                 CryptoUtilities.getAESKeyFromKeystore(keyStore, symAlias, symPwd),
                 retrieveIV(domain, username),
@@ -301,8 +310,8 @@ public class PwdManagerClient {
 
     private boolean enoughResponses(Object[] retrieved) {
         int n = call.size();
-        System.out.println(n);
-        System.out.println(countNotNull(retrieved));
+        //System.out.println(n);
+        //System.out.println(countNotNull(retrieved));
         /* If there were more responses than the number of faults we tolerate, then we will proceed.
         *  The expression (2.0 / 3.0) * n - 1.0 / 6.0) is N = 3f + 1 solved in order to F
         */
@@ -315,11 +324,15 @@ public class PwdManagerClient {
         return count;
     }
 
-    private byte[] signFields(String[] fieldsToSend) throws NoSuchAlgorithmException, InvalidKeyException, SignatureException, UnrecoverableKeyException, KeyStoreException {
+    private byte[] signFields(String[] fieldsToSend)
+            throws UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, InvalidKeyException,
+            SignatureException {
         return cryptoManager.signFields(fieldsToSend, keyStore, asymAlias, asymPwd);
     }
 
-    private String[] encryptFields(String domain, String username, String password) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidAlgorithmParameterException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException, UnrecoverableKeyException, KeyStoreException {
+    private String[] encryptFields(String domain, String username, String password)
+            throws NoSuchAlgorithmException, UnrecoverableKeyException, KeyStoreException, IllegalBlockSizeException,
+            InvalidKeyException, BadPaddingException, InvalidAlgorithmParameterException, NoSuchPaddingException {
         byte[] iv = retrieveIV(domain, username); // this initializes the versionNumber if needed.
         int version = getVersion(domain, username) + 1;
         setVersion(domain, username, version);
@@ -364,7 +377,10 @@ public class PwdManagerClient {
         }
     }
 
-    private String[] encryptFields(String domain, String username) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidAlgorithmParameterException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException, UnrecoverableKeyException, KeyStoreException {
+    private String[] encryptFields(String domain, String username)
+            throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidAlgorithmParameterException,
+            InvalidKeyException, BadPaddingException, IllegalBlockSizeException, UnrecoverableKeyException,
+            KeyStoreException {
         byte[] iv = retrieveIV(domain, username);
         String[] stuff = new String[]{domain, username};
         String[] encryptedStuff = new String[stuff.length];
@@ -380,14 +396,16 @@ public class PwdManagerClient {
 
     private void verifyFreshness(Password retrieved) throws MessageNotFreshException {
         // Check Freshness
-        boolean validTime = cryptoManager.isTimestampAndNonceValid(new Timestamp(Long.valueOf(retrieved.getTimestamp())),
+        boolean validTime = cryptoManager.isTimestampAndNonceValid(
+                new Timestamp(Long.valueOf(retrieved.getTimestamp())),
                 cryptoManager.convertBase64ToBinary(retrieved.getNonce()));
         if (!validTime) {
             throw new MessageNotFreshException();
         }
     }
 
-    private void verifyServersIntegrity(PublicKey publicKey, Password retrieved) throws NoSuchAlgorithmException, InvalidKeyException, SignatureException, ServersIntegrityException {
+    private void verifyServersIntegrity(PublicKey publicKey, Password retrieved)
+            throws NoSuchAlgorithmException, InvalidKeyException, SignatureException, ServersIntegrityException {
         // Check tampering
         String[] myFields = new String[]{retrieved.getDomain(), retrieved.getUsername(), retrieved.getPassword(),
                 retrieved.getVersionNumber(), retrieved.getDeviceId()};
@@ -398,7 +416,9 @@ public class PwdManagerClient {
         }
     }
 
-    private void verifyServersSignature(Password retrieved) throws InvalidKeySpecException, NoSuchAlgorithmException, InvalidKeyException, SignatureException, ServersSignatureNotValidException {
+    private void verifyServersSignature(Password retrieved)
+            throws InvalidKeySpecException, NoSuchAlgorithmException, InvalidKeyException, SignatureException,
+            ServersSignatureNotValidException {
         String[] myFields = new String[]{retrieved.getPublicKey(),
                 retrieved.getDomain(),
                 retrieved.getUsername(),
@@ -419,7 +439,8 @@ public class PwdManagerClient {
         }
     }
 
-    private boolean isValidSig(PublicKey serverPublicKey, String[] myFields, String reqSignature) throws NoSuchAlgorithmException, InvalidKeyException, SignatureException {
+    private boolean isValidSig(PublicKey serverPublicKey, String[] myFields, String reqSignature)
+            throws NoSuchAlgorithmException, InvalidKeyException, SignatureException {
         return cryptoManager.isValidSig(serverPublicKey, myFields, reqSignature);
     }
 
