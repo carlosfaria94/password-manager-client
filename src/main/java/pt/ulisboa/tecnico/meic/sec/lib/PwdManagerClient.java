@@ -61,8 +61,7 @@ public class PwdManagerClient {
         try (ObjectInputStream in = new ObjectInputStream(new BufferedInputStream(new FileInputStream(UUID_DAT)))) {
             myDeviceId = (UUID) in.readObject();
         } catch (ClassNotFoundException | IOException e) {
-            e.printStackTrace();
-            System.err.println(e.getMessage() + "\nGenerating UUID random.");
+            System.err.println("Generating a new UUID random.");
             myDeviceId = UUID.randomUUID();
         }
     }
