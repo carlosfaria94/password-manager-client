@@ -1,11 +1,8 @@
 package pt.ulisboa.tecnico.meic.sec;
 
-import pt.ulisboa.tecnico.meic.sec.lib.LocalPassword;
 import pt.ulisboa.tecnico.meic.sec.lib.PwdManagerClient;
 
-import java.lang.reflect.Array;
 import java.security.KeyStore;
-import java.util.Arrays;
 import java.util.InputMismatchException;
 import java.util.Scanner;
 

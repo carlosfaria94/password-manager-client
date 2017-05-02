@@ -2,12 +2,12 @@ package pt.ulisboa.tecnico.meic.sec.lib;
 
 import java.util.UUID;
 
-public class LocalPassword implements Comparable{
+public class LocalPassword implements Comparable {
 
-    private String domain;
     private final String username;
     private final String password;
     private final int version;
+    private String domain;
     private UUID deviceId;
 
     public LocalPassword(String domain, String username, String password, String version, String deviceId) {
@@ -40,12 +40,12 @@ public class LocalPassword implements Comparable{
 
     @Override
     public int compareTo(Object o) {
-        if(o instanceof LocalPassword) {
+        if (o instanceof LocalPassword) {
             LocalPassword other = (LocalPassword) o;
             int comparison = other.getVersion() - version;
-            if(comparison == 0){
+            if (comparison == 0) {
                 return other.getDeviceId().compareTo(this.deviceId);
-            }else return comparison;
+            } else return comparison;
         } else throw new RuntimeException("Not LocalPassword");
     }
 

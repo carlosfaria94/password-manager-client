@@ -137,7 +137,7 @@ public class PwdManagerClient {
                     try {
                         verifyEverything(publicKey, p);
                     } catch (InvalidKeySpecException | NoSuchAlgorithmException | SignatureException |
-                            InvalidKeyException | ServersSignatureNotValidException|
+                            InvalidKeyException | ServersSignatureNotValidException |
                             ServersIntegrityException | MessageNotFreshException e) {
                         retrieved[i] = null;
                     }
@@ -206,7 +206,7 @@ public class PwdManagerClient {
             // ver se houve processos diferentes
             // Atomic (1, N) Register
             // #writeYourReads
-            if(localPasswordArray[localPasswordArray.length - 1].getVersion() != localPasswordArray[0].getVersion())
+            if (localPasswordArray[localPasswordArray.length - 1].getVersion() != localPasswordArray[0].getVersion())
                 save_password(localPasswordArray[0].getDomain(), localPasswordArray[0].getUsername(),
                         localPasswordArray[0].getPassword());
 
@@ -271,18 +271,18 @@ public class PwdManagerClient {
     }
 
     private void updateLocalPasswordVersion(LocalPassword localPassword) {
-        if(localPassword.getVersion() > getVersion(localPassword.getDomain(), localPassword.getUsername())){
+        if (localPassword.getVersion() > getVersion(localPassword.getDomain(), localPassword.getUsername())) {
             System.out.println("Server version is greater than the client. This can occur in a sync problem. " +
                     "Do you want to update your version records? [Y/n]");
             Scanner scanner = new Scanner(System.in);
-            if(scanner.nextLine().equalsIgnoreCase("y")){
+            if (scanner.nextLine().equalsIgnoreCase("y")) {
                 setVersion(localPassword.getDomain(), localPassword.getUsername(), localPassword.getVersion());
                 System.out.println("Version updated!");
             } else if (scanner.nextLine().equalsIgnoreCase("n")) {
                 System.out.println("Skip updated!");
             } else
                 System.out.println("Assuming default: Skip Update");
-        }else
+        } else
             setVersion(localPassword.getDomain(), localPassword.getUsername(), localPassword.getVersion());
         //System.out.println("Password Selected:\n" + localPassword);
     }
