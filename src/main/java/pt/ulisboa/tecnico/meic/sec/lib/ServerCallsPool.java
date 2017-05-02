@@ -43,7 +43,7 @@ public class ServerCallsPool {
             threads[i] = new Thread(() -> {
                 try {
                     usersResponses[finalI] = singleServerCalls[finalI].register(user);
-                }catch (Exception ignored){
+                } catch (Exception ignored) {
                     // If a thread crashed, it's probably connection problems
                 }
             });
@@ -71,7 +71,7 @@ public class ServerCallsPool {
             threads[i] = new Thread(() -> {
                 try {
                     passwordsResponse[finalI] = singleServerCalls[finalI].putPassword(pwd);
-                } catch (Exception ignored){
+                } catch (Exception ignored) {
                     // If a thread crashed, it's probably connection problems
                 }
             });
@@ -97,7 +97,7 @@ public class ServerCallsPool {
             threads[i] = new Thread(() -> {
                 try {
                     passwordsResponse[finalI] = singleServerCalls[finalI].retrievePassword(pwd);
-                }catch (Exception ignored){
+                } catch (Exception ignored) {
                     // If a thread crashed, it's probably connection problems
                 }
             });

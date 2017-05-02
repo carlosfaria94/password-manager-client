@@ -2,13 +2,13 @@ package pt.ulisboa.tecnico.meic.sec.lib;
 
 import java.security.NoSuchAlgorithmException;
 
-public class SingleServerCallsFaultyNullMockup extends SingleServerCallsMockup{
+public class SingleServerCallsFaultyNullMockup extends SingleServerCallsMockup {
     public SingleServerCallsFaultyNullMockup() throws NoSuchAlgorithmException {
     }
 
     @Override
     public User register(User user) {
-       return null;
+        return null;
     }
 
     @Override

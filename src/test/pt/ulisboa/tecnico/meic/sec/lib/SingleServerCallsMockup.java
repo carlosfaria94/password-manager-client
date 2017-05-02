@@ -10,7 +10,7 @@ import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.HashMap;
 
-public class SingleServerCallsMockup extends SingleServerCalls{
+public class SingleServerCallsMockup extends SingleServerCalls {
     CryptoManager cryptoManager;
     private PublicKey publicKey;
     private PrivateKey privateKey;
@@ -33,7 +33,7 @@ public class SingleServerCallsMockup extends SingleServerCalls{
 
     @Override
     public Password putPassword(Password password) {
-        try{
+        try {
             verifyPasswordInsertSignature(password);
 
             passwordStorage.put(password.getDomain() + password.getUsername(), password);
@@ -48,11 +48,11 @@ public class SingleServerCallsMockup extends SingleServerCalls{
 
     @Override
     public Password retrievePassword(Password password) {
-        try{
+        try {
             verifyPasswordFetchSignature(password);
 
             Password pwd = passwordStorage.get(password.getDomain() + password.getUsername());
-            if(pwd == null || !password.getPublicKey().equals(pwd.getPublicKey())) {
+            if (pwd == null || !password.getPublicKey().equals(pwd.getPublicKey())) {
                 return null;
             }
 
@@ -87,15 +87,15 @@ public class SingleServerCallsMockup extends SingleServerCalls{
                 password.nonce
         };
 
-        if(!cryptoManager.isValidSig(passwordKey, myFields, password.reqSignature))
+        if (!cryptoManager.isValidSig(passwordKey, myFields, password.reqSignature))
             throw new InvalidRequestSignatureException();
         verifyFreshness(password.nonce, password.timestamp);
     }
 
     private void verifyFreshness(String nonce, String timestamp)
             throws NoSuchAlgorithmException, DuplicateRequestException, ExpiredTimestampException {
-        if(!cryptoManager.isTimestampAndNonceValid(new java.sql.Timestamp(Long.valueOf(timestamp)),
-                cryptoManager.convertBase64ToBinary(nonce))){
+        if (!cryptoManager.isTimestampAndNonceValid(new java.sql.Timestamp(Long.valueOf(timestamp)),
+                cryptoManager.convertBase64ToBinary(nonce))) {
             throw new ExpiredTimestampException();
         }
     }
@@ -145,7 +145,7 @@ public class SingleServerCallsMockup extends SingleServerCalls{
                 password.nonce,
         };
 
-        if(!cryptoManager.isValidSig(passwordKey, myFields, password.reqSignature))
+        if (!cryptoManager.isValidSig(passwordKey, myFields, password.reqSignature))
             throw new InvalidRequestSignatureException();
         verifyFreshness(password.nonce, password.timestamp);
     }

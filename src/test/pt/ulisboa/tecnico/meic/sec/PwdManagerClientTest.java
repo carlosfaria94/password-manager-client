@@ -57,8 +57,7 @@ public class PwdManagerClientTest {
                 String pwd = client.retrieve_password("youtube.com", "unicornio");
                 Assert.assertEquals(pwd, "arcoiris");
             }
-        }
-        catch (NotEnoughResponsesConsensusException e) {
+        } catch (NotEnoughResponsesConsensusException e) {
             e.printStackTrace();
             fail("NotEnoughResponsesConsensusException should have not been thrown");
         }
@@ -75,8 +74,7 @@ public class PwdManagerClientTest {
             Assert.assertEquals(pwd, password);
             String pwd2 = client.retrieve_password("fenix.ist.utl.pt", "huckleberry_finn");
             Assert.assertEquals(pwd2, password);
-        }
-        catch (NotEnoughResponsesConsensusException e) {
+        } catch (NotEnoughResponsesConsensusException e) {
             e.printStackTrace();
             fail("NotEnoughResponsesConsensusException should have not been thrown");
         }
@@ -93,8 +91,7 @@ public class PwdManagerClientTest {
             Assert.assertEquals(pwd, password);
             String pwd2 = client.retrieve_password("pokecenter.net", "ash");
             Assert.assertEquals(pwd2, password);
-        }
-        catch (NotEnoughResponsesConsensusException e) {
+        } catch (NotEnoughResponsesConsensusException e) {
             e.printStackTrace();
             fail("NotEnoughResponsesConsensusException should have not been thrown");
         }
@@ -111,15 +108,14 @@ public class PwdManagerClientTest {
             Assert.assertEquals(pwd, password);
             String pwd2 = client.retrieve_password("supersecret.portugal.pt", "companhia");
             Assert.assertEquals(pwd2, password);
-        }
-        catch (NotEnoughResponsesConsensusException e) {
+        } catch (NotEnoughResponsesConsensusException e) {
             e.printStackTrace();
             fail("NotEnoughResponsesConsensusException should have not been thrown");
         }
     }
 
     @Test
-    public void testSortLocalPasswords(){
+    public void testSortLocalPasswords() {
         LocalPassword[] l = new LocalPassword[2];
         LocalPassword test = new LocalPassword("123", "123", "0000",
                 "2", UUID.nameUUIDFromBytes("ola".getBytes()).toString());

@@ -340,10 +340,10 @@ public class PwdManagerClient {
 
         byte[] iv = retrieveIV(domain, username); // this initializes the versionNumber if needed.
         int version;
-        if(versionInc) {
+        if (versionInc) {
             version = getVersion(domain, username) + 1;
             setVersion(domain, username, version);
-        }else
+        } else
             version = getVersion(domain, username);
 
         String[] stuff = new String[]{
