@@ -98,9 +98,14 @@ public class PwdManagerClient {
 
     public void save_password(String domain, String username, String password)
             throws NotEnoughResponsesConsensusException {
+        save_password(domain, username, password, true);
+    }
+
+    private void save_password(String domain, String username, String password, boolean versionInc)
+            throws NotEnoughResponsesConsensusException {
         try {
             PublicKey publicKey = CryptoUtilities.getPublicKeyFromKeystore(keyStore, asymAlias, asymPwd);
-            String[] encryptedStuff = encryptFields(domain, username, password);
+            String[] encryptedStuff = encryptFields(domain, username, password, versionInc);
 
             String[] fieldsToSend = new String[]{
                     cryptoManager.convertBinaryToBase64(publicKey.getEncoded()),
@@ -207,7 +212,7 @@ public class PwdManagerClient {
             // #writeYourReads
             if (localPasswordArray[localPasswordArray.length - 1].getVersion() != localPasswordArray[0].getVersion())
                 save_password(localPasswordArray[0].getDomain(), localPasswordArray[0].getUsername(),
-                        localPasswordArray[0].getPassword());
+                        localPasswordArray[0].getPassword(), false);
 
             password = localPasswordArray[0].getPassword();
 
@@ -329,12 +334,17 @@ public class PwdManagerClient {
         return cryptoManager.signFields(fieldsToSend, keyStore, asymAlias, asymPwd);
     }
 
-    private String[] encryptFields(String domain, String username, String password)
+    private String[] encryptFields(String domain, String username, String password, boolean versionInc)
             throws NoSuchAlgorithmException, UnrecoverableKeyException, KeyStoreException, IllegalBlockSizeException,
             InvalidKeyException, BadPaddingException, InvalidAlgorithmParameterException, NoSuchPaddingException {
+
         byte[] iv = retrieveIV(domain, username); // this initializes the versionNumber if needed.
-        int version = getVersion(domain, username) + 1;
-        setVersion(domain, username, version);
+        int version;
+        if(versionInc) {
+            version = getVersion(domain, username) + 1;
+            setVersion(domain, username, version);
+        }else
+            version = getVersion(domain, username);
 
         String[] stuff = new String[]{
                 domain,
