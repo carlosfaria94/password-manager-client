@@ -62,7 +62,6 @@ public class ServerCallsPool {
         return usersResponses;
     }
 
-
     public Password[] putPassword(Password pwd) throws IOException {
         Thread[] threads = new Thread[singleServerCalls.length];
         Password[] passwordsResponse = new Password[singleServerCalls.length];

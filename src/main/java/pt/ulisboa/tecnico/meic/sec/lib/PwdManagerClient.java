@@ -1,5 +1,6 @@
 package pt.ulisboa.tecnico.meic.sec.lib;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.MutablePair;
 import pt.ulisboa.tecnico.meic.sec.CryptoManager;
@@ -107,16 +108,24 @@ public class PwdManagerClient {
             PublicKey publicKey = CryptoUtilities.getPublicKeyFromKeystore(keyStore, asymAlias, asymPwd);
             String[] encryptedStuff = encryptFields(domain, username, password, versionInc);
 
+            int version;
+            if (versionInc) {
+                version = getVersion(domain, username) + 1;
+                setVersion(domain, username, version);
+            } else
+                version = getVersion(domain, username);
+
             String[] fieldsToSend = new String[]{
                     cryptoManager.convertBinaryToBase64(publicKey.getEncoded()),
                     encryptedStuff[0], // domain
                     encryptedStuff[1], // username
                     encryptedStuff[2], // password
-                    encryptedStuff[3], // versionNumber
-                    encryptedStuff[4], // deviceId
-                    cryptoManager.convertBinaryToBase64(signFields(encryptedStuff)), //pwdSignature
+                    String.valueOf(version), // versionNumber
+                    myDeviceId.toString(), // deviceId
+                    cryptoManager.convertBinaryToBase64(signFields(
+                            ArrayUtils.addAll(encryptedStuff, new String[]{ String.valueOf(version), myDeviceId.toString()}))), //pwdSignature
                     String.valueOf(cryptoManager.getActualTimestamp().getTime()), //timestamp
-                    cryptoManager.convertBinaryToBase64(cryptoManager.generateNonce(32)), //nonce
+                    cryptoManager.convertBinaryToBase64(cryptoManager.generateNonce(32)) //nonce
             };
 
             Password pwdToRegister = new Password(
@@ -164,6 +173,8 @@ public class PwdManagerClient {
         try {
             PublicKey publicKey = CryptoUtilities.getPublicKeyFromKeystore(keyStore, asymAlias, asymPwd);
             String[] encryptedStuff = encryptFields(domain, username);
+
+
 
             String[] fieldsToSend = new String[]{
                     cryptoManager.convertBinaryToBase64(publicKey.getEncoded()),
@@ -298,8 +309,8 @@ public class PwdManagerClient {
                 new String(decipherField(domain, username, p.getDomain())),
                 new String(decipherField(domain, username, p.getUsername())),
                 new String(decipherField(domain, username, p.getPassword())),
-                new String(decipherField(domain, username, p.getVersionNumber())),
-                new String(decipherField(domain, username, p.getDeviceId()))};
+                p.getVersionNumber(),
+                p.getDeviceId()};
     }
 
     private byte[] decipherField(String domain, String username, String field)
@@ -339,19 +350,11 @@ public class PwdManagerClient {
             InvalidKeyException, BadPaddingException, InvalidAlgorithmParameterException, NoSuchPaddingException {
 
         byte[] iv = retrieveIV(domain, username); // this initializes the versionNumber if needed.
-        int version;
-        if (versionInc) {
-            version = getVersion(domain, username) + 1;
-            setVersion(domain, username, version);
-        } else
-            version = getVersion(domain, username);
 
         String[] stuff = new String[]{
                 domain,
                 username,
                 password,
-                String.valueOf(version),
-                myDeviceId.toString()
         };
 
         String[] encryptedStuff = new String[stuff.length];
