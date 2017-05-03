@@ -159,6 +159,8 @@ public class PwdManagerClient {
 
             if (!enoughResponses(retrieved)) throw new NotEnoughResponsesConsensusException();
 
+            // TODO BERNARDO Should we care about responses?
+
         } catch (InvalidKeyException | InvalidAlgorithmParameterException | KeyStoreException |
                 NoSuchAlgorithmException | UnrecoverableKeyException | SignatureException |
                 IllegalBlockSizeException | BadPaddingException | NoSuchPaddingException |
@@ -218,9 +220,9 @@ public class PwdManagerClient {
 
             LocalPassword[] localPasswordArray = sortForMostRecentPassword(decipheredData);
             updateLocalPasswordVersion(localPasswordArray[0]);
-            // ver se houve processos diferentes
+
             // Atomic (1, N) Register
-            // #writeYourReads
+            // If there are version inconsistencies
             if (localPasswordArray[localPasswordArray.length - 1].getVersion() != localPasswordArray[0].getVersion())
                 save_password(localPasswordArray[0].getDomain(), localPasswordArray[0].getUsername(),
                         localPasswordArray[0].getPassword(), false);
