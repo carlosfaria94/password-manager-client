@@ -327,8 +327,6 @@ public class PwdManagerClient {
 
     private boolean enoughResponses(Object[] retrieved) {
         int n = call.size();
-        //System.out.println(n);
-        //System.out.println(countNotNull(retrieved));
         /* If there were more responses than the number of faults we tolerate, then we will proceed.
         *  The expression (2.0 / 3.0) * n - 1.0 / 6.0) is N = 3f + 1 solved in order to F
         */

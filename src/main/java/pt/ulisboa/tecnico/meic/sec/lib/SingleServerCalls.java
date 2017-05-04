@@ -40,18 +40,18 @@ public class SingleServerCalls {
         Response response = client.newCall(request).execute();
 
         if (response.isSuccessful()) {
-            //System.out.println("User successful registered: " + newUser.toString());
+            System.out.println("User successful registered: " + json.fromJson(response.body().string(), User.class).toString());
             return json.fromJson(response.body().string(), User.class);
         } else {
             switch (response.code()) {
                 case 409:
-                    //System.out.println("User already registered.");
+                    System.out.println("User already registered.");
                     break;
                 case 500:
-                    //System.out.println("User not registered. Internal Server error.");
+                    System.out.println("User not registered. Internal Server error.");
                     break;
                 default:
-                    //System.out.println("User not registered.");
+                    System.out.println("User not registered.");
                     break;
             }
             return null;
