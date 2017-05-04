@@ -157,6 +157,9 @@ public class PwdManagerClient {
                 }
             }
 
+            for(Password p : retrieved)
+                System.out.println(p);
+
             if (!enoughResponses(retrieved)) throw new NotEnoughResponsesConsensusException();
 
             // TODO BERNARDO Should we care about responses?
