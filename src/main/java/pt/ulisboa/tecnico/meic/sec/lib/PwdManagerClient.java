@@ -123,7 +123,7 @@ public class PwdManagerClient {
                     String.valueOf(version), // versionNumber
                     myDeviceId.toString(), // deviceId
                     cryptoManager.convertBinaryToBase64(signFields(
-                            ArrayUtils.addAll(encryptedStuff, new String[]{ String.valueOf(version), myDeviceId.toString()}))), //pwdSignature
+                            ArrayUtils.addAll(encryptedStuff, new String[]{String.valueOf(version), myDeviceId.toString()}))), //pwdSignature
                     String.valueOf(cryptoManager.getActualTimestamp().getTime()), //timestamp
                     cryptoManager.convertBinaryToBase64(cryptoManager.generateNonce(32)) //nonce
             };
@@ -177,7 +177,6 @@ public class PwdManagerClient {
             String[] encryptedStuff = encryptFields(domain, username);
 
 
-
             String[] fieldsToSend = new String[]{
                     cryptoManager.convertBinaryToBase64(publicKey.getEncoded()),
                     encryptedStuff[0], // domain
@@ -211,6 +210,7 @@ public class PwdManagerClient {
                     } catch (InvalidKeySpecException | NoSuchAlgorithmException | SignatureException |
                             InvalidKeyException | ServersSignatureNotValidException | MessageNotFreshException |
                             ServersIntegrityException e) {
+                        System.err.println(e.getMessage());
                         retrieved[i] = null;
                     }
                 }
@@ -223,10 +223,10 @@ public class PwdManagerClient {
 
             // Atomic (1, N) Register
             // If there are version inconsistencies
-            if (localPasswordArray[localPasswordArray.length - 1].getVersion() != localPasswordArray[0].getVersion())
+            if (localPasswordArray[localPasswordArray.length - 1].getVersion() != localPasswordArray[0].getVersion()) {
                 save_password(localPasswordArray[0].getDomain(), localPasswordArray[0].getUsername(),
                         localPasswordArray[0].getPassword(), false);
-
+            }
             password = localPasswordArray[0].getPassword();
 
         } catch (InvalidKeyException | InvalidAlgorithmParameterException | KeyStoreException |
@@ -436,9 +436,12 @@ public class PwdManagerClient {
                 retrieved.getUsername(),
                 retrieved.getPassword(),
                 retrieved.getVersionNumber(),
+                retrieved.getDeviceId(),
                 retrieved.getPwdSignature(),
                 retrieved.getTimestamp(),
                 retrieved.getNonce()};
+
+        //System.out.println(retrieved);
 
         PublicKey serverPublicKey = KeyFactory.getInstance("RSA").generatePublic(
                 new X509EncodedKeySpec(cryptoManager.convertBase64ToBinary(retrieved.getPublicKey()))
