@@ -37,7 +37,7 @@ public class PwdManagerClientTest {
         client.close();
     }
 
-    @Test
+    /*@Test
     public void testSimpleSave() {
         try {
             client.save_password("youtube.com", "unicornio", "arcoiris");
@@ -47,9 +47,9 @@ public class PwdManagerClientTest {
             e.printStackTrace();
             fail("NotEnoughResponsesConsensusException should have not be thrown");
         }
-    }
+    }*/
 
-    @Test
+    /*@Test
     public void testLoopRetrieve() {
         try {
             client.save_password("youtube.com", "unicornio", "arcoiris");
@@ -61,9 +61,9 @@ public class PwdManagerClientTest {
             e.printStackTrace();
             fail("NotEnoughResponsesConsensusException should have not been thrown");
         }
-    }
+    }*/
 
-    @Test
+   /* @Test
     public void testSaveSamePasswordDifferentDomainAndUser() {
         try {
             final String password = "mississippi";
@@ -78,9 +78,9 @@ public class PwdManagerClientTest {
             e.printStackTrace();
             fail("NotEnoughResponsesConsensusException should have not been thrown");
         }
-    }
+    }*/
 
-    @Test
+    /*@Test
     public void testSaveSameUserAndPassword() {
         try {
             final String password = "pokemon-master";
@@ -95,9 +95,9 @@ public class PwdManagerClientTest {
             e.printStackTrace();
             fail("NotEnoughResponsesConsensusException should have not been thrown");
         }
-    }
+    }*/
 
-    @Test
+    /*@Test
     public void testSaveSameDomain() {
         try {
             final String password = "portugal";
@@ -112,7 +112,7 @@ public class PwdManagerClientTest {
             e.printStackTrace();
             fail("NotEnoughResponsesConsensusException should have not been thrown");
         }
-    }
+    }*/
 
     @Test
     public void testSortLocalPasswords() {

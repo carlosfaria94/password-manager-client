@@ -5,10 +5,7 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.MutablePair;
 import pt.ulisboa.tecnico.meic.sec.CryptoManager;
 import pt.ulisboa.tecnico.meic.sec.CryptoUtilities;
-import pt.ulisboa.tecnico.meic.sec.lib.exception.MessageNotFreshException;
-import pt.ulisboa.tecnico.meic.sec.lib.exception.NotEnoughResponsesConsensusException;
-import pt.ulisboa.tecnico.meic.sec.lib.exception.ServersIntegrityException;
-import pt.ulisboa.tecnico.meic.sec.lib.exception.ServersSignatureNotValidException;
+import pt.ulisboa.tecnico.meic.sec.lib.exception.*;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -110,14 +107,22 @@ public class PwdManagerClient {
     private void save_password(String domain, String username, String password, boolean versionInc) {
         try {
             PublicKey publicKey = CryptoUtilities.getPublicKeyFromKeystore(keyStore, asymAlias, asymPwd);
-            String[] encryptedStuff = encryptFields(domain, username, password, versionInc);
+            String[] encryptedStuff = encryptFields(domain, username, password);
 
+            LocalPassword lastPut;
             int version;
+            try {
+                lastPut = retrieve_password(domain, username);
+                version = lastPut.getVersion();
+            }catch (AllNullException e){
+                version = 1;
+                versionInc = false;
+            }
+
+
             if (versionInc) {
-                version = getVersion(domain, username) + 1;
-                setVersion(domain, username, version);
-            } else
-                version = getVersion(domain, username);
+                version++;
+            }
 
             String[] fieldsToSend = new String[]{
                     cryptoManager.convertBinaryToBase64(publicKey.getEncoded()),
@@ -127,7 +132,8 @@ public class PwdManagerClient {
                     String.valueOf(version), // versionNumber
                     myDeviceId.toString(), // deviceId
                     cryptoManager.convertBinaryToBase64(signFields(
-                            ArrayUtils.addAll(encryptedStuff, String.valueOf(version), myDeviceId.toString()))), //pwdSignature
+                            ArrayUtils.addAll(encryptedStuff, String.valueOf(version),
+                                    myDeviceId.toString()))), //pwdSignature
                     String.valueOf(cryptoManager.getActualTimestamp().getTime()), //timestamp
                     cryptoManager.convertBinaryToBase64(cryptoManager.generateNonce(32)) //nonce
             };
@@ -161,8 +167,9 @@ public class PwdManagerClient {
         }
     }
 
-    public String retrieve_password(String domain, String username) throws NotEnoughResponsesConsensusException {
-        String password = "";
+    public LocalPassword retrieve_password(String domain, String username)
+            throws NotEnoughResponsesConsensusException, AllNullException {
+        LocalPassword password = null;
         try {
             PublicKey publicKey = CryptoUtilities.getPublicKeyFromKeystore(keyStore, asymAlias, asymPwd);
             String[] encryptedStuff = encryptFields(domain, username);
@@ -195,6 +202,7 @@ public class PwdManagerClient {
                 Password p = retrieved[i];
                 if (p != null) {
                     try {
+                        System.out.println(p);
                         verifyEverything(publicKey, p);
                         String[] fields = decipherFields(domain, username, p);
                         decipheredData.add(new LocalPassword(fields[0], fields[1], fields[2], fields[3], fields[4]));
@@ -207,10 +215,11 @@ public class PwdManagerClient {
                 }
             }
 
-            if (!enoughResponses(retrieved)) throw new NotEnoughResponsesConsensusException();
+            if(isAllNull(retrieved)) throw new AllNullException();
+            else if (!enoughResponses(retrieved)) throw new NotEnoughResponsesConsensusException();
 
             LocalPassword[] localPasswordArray = sortForMostRecentPassword(decipheredData);
-            updateLocalPasswordVersion(localPasswordArray[0]);
+            //updateLocalPasswordVersion(localPasswordArray[0]);
 
             // Atomic (1, N) Register
             // If there are version inconsistencies
@@ -218,7 +227,7 @@ public class PwdManagerClient {
                 save_password(localPasswordArray[0].getDomain(), localPasswordArray[0].getUsername(),
                         localPasswordArray[0].getPassword(), false);
             }
-            password = localPasswordArray[0].getPassword();
+            password = localPasswordArray[0];
 
         } catch (InvalidKeyException | InvalidAlgorithmParameterException | KeyStoreException |
                 NoSuchAlgorithmException | UnrecoverableKeyException | SignatureException |
@@ -320,13 +329,19 @@ public class PwdManagerClient {
         return count;
     }
 
+    private boolean isAllNull(Object[] array) {
+        int count = 0;
+        for (Object o : array) if (o == null) count++;
+        return count == array.length;
+    }
+
     private byte[] signFields(String[] fieldsToSend)
             throws UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, InvalidKeyException,
             SignatureException {
         return cryptoManager.signFields(fieldsToSend, keyStore, asymAlias, asymPwd);
     }
 
-    private String[] encryptFields(String domain, String username, String password, boolean versionInc)
+    private String[] encryptFields(String domain, String username, String password)
             throws NoSuchAlgorithmException, UnrecoverableKeyException, KeyStoreException, IllegalBlockSizeException,
             InvalidKeyException, BadPaddingException, InvalidAlgorithmParameterException, NoSuchPaddingException {
 
