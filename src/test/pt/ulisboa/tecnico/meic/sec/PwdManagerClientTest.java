@@ -6,6 +6,7 @@ import org.junit.Before;
 import org.junit.Test;
 import pt.ulisboa.tecnico.meic.sec.lib.LocalPassword;
 import pt.ulisboa.tecnico.meic.sec.lib.PwdManagerClient;
+import pt.ulisboa.tecnico.meic.sec.lib.exception.AllNullException;
 import pt.ulisboa.tecnico.meic.sec.lib.exception.NotEnoughResponsesConsensusException;
 
 import java.io.IOException;
@@ -37,82 +38,82 @@ public class PwdManagerClientTest {
         client.close();
     }
 
-    /*@Test
-    public void testSimpleSave() {
+    @Test
+    public void testSimpleSave()  {
         try {
             client.save_password("youtube.com", "unicornio", "arcoiris");
-            String pwd = client.retrieve_password("youtube.com", "unicornio");
-            Assert.assertEquals(pwd, "arcoiris");
-        } catch (NotEnoughResponsesConsensusException e) {
+            LocalPassword  pwd = client.retrieve_password("youtube.com", "unicornio");
+            Assert.assertEquals(pwd.getPassword(), "arcoiris");
+        } catch (AllNullException | NotEnoughResponsesConsensusException e) {
             e.printStackTrace();
             fail("NotEnoughResponsesConsensusException should have not be thrown");
         }
-    }*/
+    }
 
-    /*@Test
-    public void testLoopRetrieve() {
+    @Test
+    public void testLoopRetrieve()  {
         try {
             client.save_password("youtube.com", "unicornio", "arcoiris");
             for (int i = 0; i < 4; i++) {
-                String pwd = client.retrieve_password("youtube.com", "unicornio");
-                Assert.assertEquals(pwd, "arcoiris");
+                LocalPassword  pwd = client.retrieve_password("youtube.com", "unicornio");
+                Assert.assertEquals(pwd.getPassword(), "arcoiris");
             }
-        } catch (NotEnoughResponsesConsensusException e) {
+        } catch (AllNullException | NotEnoughResponsesConsensusException e) {
             e.printStackTrace();
             fail("NotEnoughResponsesConsensusException should have not been thrown");
         }
-    }*/
+    }
 
-   /* @Test
-    public void testSaveSamePasswordDifferentDomainAndUser() {
+    @Test
+    public void testSaveSamePasswordDifferentDomainAndUser()  {
         try {
             final String password = "mississippi";
             client.save_password("facebook.com", "tomsawyer", password);
             client.save_password("fenix.ist.utl.pt", "huckleberry_finn", password);
 
-            String pwd = client.retrieve_password("facebook.com", "tomsawyer");
-            Assert.assertEquals(pwd, password);
-            String pwd2 = client.retrieve_password("fenix.ist.utl.pt", "huckleberry_finn");
-            Assert.assertEquals(pwd2, password);
-        } catch (NotEnoughResponsesConsensusException e) {
+            LocalPassword  pwd = client.retrieve_password("facebook.com", "tomsawyer");
+            Assert.assertEquals(pwd.getPassword(), password);
+            LocalPassword  pwd2 = client.retrieve_password("fenix.ist.utl.pt", "huckleberry_finn");
+            Assert.assertEquals(pwd2.getPassword(), password);
+        } catch (AllNullException | NotEnoughResponsesConsensusException e) {
             e.printStackTrace();
             fail("NotEnoughResponsesConsensusException should have not been thrown");
         }
-    }*/
+    }
 
-    /*@Test
-    public void testSaveSameUserAndPassword() {
+    @Test
+    public void testSaveSameUserAndPassword()  {
         try {
             final String password = "pokemon-master";
             client.save_password("pokedex.org", "ash", password);
             client.save_password("pokecenter.net", "ash", password);
 
-            String pwd = client.retrieve_password("pokedex.org", "ash");
-            Assert.assertEquals(pwd, password);
-            String pwd2 = client.retrieve_password("pokecenter.net", "ash");
-            Assert.assertEquals(pwd2, password);
-        } catch (NotEnoughResponsesConsensusException e) {
+            LocalPassword  pwd = client.retrieve_password("pokedex.org", "ash");
+            Assert.assertEquals(pwd.getPassword(), password);
+            LocalPassword  pwd2 = client.retrieve_password("pokecenter.net", "ash");
+            Assert.assertEquals(pwd2.getPassword(), password);
+        } catch (AllNullException | NotEnoughResponsesConsensusException e) {
             e.printStackTrace();
             fail("NotEnoughResponsesConsensusException should have not been thrown");
         }
-    }*/
+    }
 
-    /*@Test
-    public void testSaveSameDomain() {
+    @Test
+    public void testSaveSameDomain()  {
         try {
             final String password = "portugal";
             client.save_password("supersecret.portugal.pt", "batatinha", password);
             client.save_password("supersecret.portugal.pt", "companhia", password);
 
-            String pwd = client.retrieve_password("supersecret.portugal.pt", "batatinha");
-            Assert.assertEquals(pwd, password);
-            String pwd2 = client.retrieve_password("supersecret.portugal.pt", "companhia");
-            Assert.assertEquals(pwd2, password);
-        } catch (NotEnoughResponsesConsensusException e) {
+            LocalPassword pwd = client.retrieve_password("supersecret.portugal.pt", "batatinha");
+            Assert.assertEquals(pwd.getPassword(), password);
+            LocalPassword  pwd2 = client.retrieve_password("supersecret.portugal.pt", "companhia");
+            Assert.assertEquals(pwd2.getPassword(), password);
+        } catch (AllNullException | NotEnoughResponsesConsensusException e) {
             e.printStackTrace();
             fail("NotEnoughResponsesConsensusException should have not been thrown");
         }
-    }*/
+    }
 
     @Test
     public void testSortLocalPasswords() {
