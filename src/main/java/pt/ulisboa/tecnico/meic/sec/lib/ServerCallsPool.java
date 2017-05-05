@@ -78,7 +78,7 @@ public class ServerCallsPool {
                     int replica, counter = 0;
                     do {
                         replica = new Random().nextInt(size());
-                        if (++counter == size()) { // If we tried all replicas
+                        if (++counter > size()) { // If we tried all replicas
                             state[1] = true;
                             return;
                         }
@@ -101,7 +101,7 @@ public class ServerCallsPool {
             }
             if (state[1]) {
                 // There is no more replicas
-                throw new NotEnoughResponsesConsensusException();
+                throw new RuntimeException();
             }
         } while (state[0]);
 
