@@ -1,6 +1,12 @@
 package pt.ulisboa.tecnico.meic.sec.lib;
 
+import pt.ulisboa.tecnico.meic.sec.CryptoManager;
+import pt.ulisboa.tecnico.meic.sec.lib.exception.NotEnoughResponsesConsensusException;
+
 import java.io.IOException;
+import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.Random;
 
 public class ServerCallsPool {
     private int initialPort = 3001;
@@ -62,6 +68,48 @@ public class ServerCallsPool {
         return usersResponses;
     }
 
+    public Password putPassword(Password pwd) throws IOException, NotEnoughResponsesConsensusException {
+        final Password[] response = new Password[1];
+        ArrayList<Integer> replicasAlreadyVisited = new ArrayList<>();
+        // 0 - if for some reason replica returned null we try another one
+        // 1 - if we reached every replica we stop
+        final boolean[] state = {false, false};
+        do{
+            Thread thread = new Thread(() -> {
+                try {
+                    int replica, counter = 0;
+                    do {
+                        replica = new Random().nextInt(size());
+                        if(++counter == size()){ // If we tried all replicas
+                           state[1] = true;
+                           return;
+                        }
+                    }while(replicasAlreadyVisited.contains(replica));
+
+                    replicasAlreadyVisited.add(replica);
+                    response[0] = singleServerCalls[replica].putPassword(pwd);
+                } catch (Exception ignored) {
+                } finally {
+                    if (response[0] == null) {
+                        state[0] = true;
+                    }
+                }
+            });
+            thread.start();
+            try {
+                thread.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            if(state[1]){
+                // There is no more replicas
+                throw new NotEnoughResponsesConsensusException();
+            }
+        }while (state[0]);
+
+        return response[0];
+    }
+    /*
     public Password[] putPassword(Password pwd) throws IOException {
         Thread[] threads = new Thread[singleServerCalls.length];
         Password[] passwordsResponse = new Password[singleServerCalls.length];
@@ -86,7 +134,7 @@ public class ServerCallsPool {
             }
         }
         return passwordsResponse;
-    }
+    }*/
 
     public Password[] retrievePassword(Password pwd) throws IOException {
         Thread[] threads = new Thread[singleServerCalls.length];

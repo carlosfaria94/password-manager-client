@@ -64,6 +64,12 @@ public class PwdManagerClient {
         } catch (ClassNotFoundException | IOException e) {
             System.err.println("Generating a new UUID random.");
             myDeviceId = UUID.randomUUID();
+            try (ObjectOutputStream out = new ObjectOutputStream(
+                    new BufferedOutputStream(new FileOutputStream(UUID_DAT)))) {
+                out.writeObject(myDeviceId);
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
         }
     }
 
@@ -97,13 +103,11 @@ public class PwdManagerClient {
         }
     }
 
-    public void save_password(String domain, String username, String password)
-            throws NotEnoughResponsesConsensusException {
+    public void save_password(String domain, String username, String password) {
         save_password(domain, username, password, true);
     }
 
-    private void save_password(String domain, String username, String password, boolean versionInc)
-            throws NotEnoughResponsesConsensusException {
+    private void save_password(String domain, String username, String password, boolean versionInc) {
         try {
             PublicKey publicKey = CryptoUtilities.getPublicKeyFromKeystore(keyStore, asymAlias, asymPwd);
             String[] encryptedStuff = encryptFields(domain, username, password, versionInc);
@@ -123,7 +127,7 @@ public class PwdManagerClient {
                     String.valueOf(version), // versionNumber
                     myDeviceId.toString(), // deviceId
                     cryptoManager.convertBinaryToBase64(signFields(
-                            ArrayUtils.addAll(encryptedStuff, new String[]{String.valueOf(version), myDeviceId.toString()}))), //pwdSignature
+                            ArrayUtils.addAll(encryptedStuff, String.valueOf(version), myDeviceId.toString()))), //pwdSignature
                     String.valueOf(cryptoManager.getActualTimestamp().getTime()), //timestamp
                     cryptoManager.convertBinaryToBase64(cryptoManager.generateNonce(32)) //nonce
             };
@@ -141,33 +145,17 @@ public class PwdManagerClient {
                     cryptoManager.convertBinaryToBase64(signFields(fieldsToSend)) //reqSignature
             );
 
-            Password[] retrieved = call.putPassword(pwdToRegister);
+            Password result = call.putPassword(pwdToRegister);
 
             // If any response is insecure, we delete it.
-            for (int i = 0; i < retrieved.length; i++) {
-                Password p = retrieved[i];
-                if (p != null) {
-                    try {
-                        verifyEverything(publicKey, p);
-                    } catch (InvalidKeySpecException | NoSuchAlgorithmException | SignatureException |
-                            InvalidKeyException | ServersSignatureNotValidException |
-                            ServersIntegrityException | MessageNotFreshException e) {
-                        retrieved[i] = null;
-                    }
-                }
-            }
+            verifyEverything(publicKey, result);
+            System.out.println(result);
 
-            for(Password p : retrieved)
-                System.out.println(p);
+            // We tried our best to put a password, let's check if it really is there
+            retrieve_password(domain, username);
 
-            if (!enoughResponses(retrieved)) throw new NotEnoughResponsesConsensusException();
 
-            // TODO BERNARDO Should we care about responses?
-
-        } catch (InvalidKeyException | InvalidAlgorithmParameterException | KeyStoreException |
-                NoSuchAlgorithmException | UnrecoverableKeyException | SignatureException |
-                IllegalBlockSizeException | BadPaddingException | NoSuchPaddingException |
-                IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             System.err.println(e.getMessage());
         }
@@ -251,16 +239,7 @@ public class PwdManagerClient {
                 ex.printStackTrace();
             }
         });
-        Thread t2 = new Thread(() -> {
-            try (ObjectOutputStream out = new ObjectOutputStream(
-                    new BufferedOutputStream(new FileOutputStream(UUID_DAT)))) {
-                out.writeObject(myDeviceId);
-            } catch (IOException ex) {
-                ex.printStackTrace();
-            }
-        });
         t.start();
-        t2.start();
         keyStore = null;
         asymAlias = null;
         asymPwd = null;
@@ -268,7 +247,6 @@ public class PwdManagerClient {
         symPwd = null;
         try {
             t.join();
-            t2.join();
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
