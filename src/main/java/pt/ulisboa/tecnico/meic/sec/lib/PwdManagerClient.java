@@ -336,29 +336,12 @@ public class PwdManagerClient {
             IV iv = call.getIv(new IV(cryptoManager.convertBinaryToBase64(
                     CryptoUtilities.getPublicKeyFromKeystore(keyStore, asymAlias, asymPwd).getEncoded()),
                     toSign[0], toSign[1], toSign[2],  cryptoManager.convertBinaryToBase64(signFields(toSign))));
-            //verifyIVInsertSignature(iv);
             byte[] iv2 = cryptoManager.convertBase64ToBinary(iv.getValue());
             ivCache.put(immutablePair, iv2);
             return iv2;
         }
     }
-    void verifyIVInsertSignature(IV iv) throws NoSuchAlgorithmException, InvalidKeySpecException, SignatureException, InvalidKeyException {
-        PublicKey publicKey = KeyFactory.getInstance("RSA").generatePublic(
-                new X509EncodedKeySpec(cryptoManager.convertBase64ToBinary(iv.publicKey))
-        );
 
-        String[] myFields = new String[]{
-                iv.publicKey,
-                iv.hash,
-                iv.value,
-                iv.timestamp,
-                iv.nonce
-        };
-
-        if (!cryptoManager.isValidSig(publicKey, myFields, iv.reqSignature))
-            throw new SignatureException();
-        //cryptoManager.isTimestampAndNonceValid(iv.nonce, iv.timestamp);
-    }
 
     private String getHash(String domain, String username) throws UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException {
 
