@@ -140,4 +140,10 @@ public class ServerCallsPool {
     public void setSingleServerCalls(SingleServerCalls[] singleServerCalls) {
         this.singleServerCalls = singleServerCalls;
     }
+
+
+    //Mockup purpose
+    public SingleServerCalls[] getSingleServerCalls() {
+        return singleServerCalls;
+    }
 }

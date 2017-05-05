@@ -16,6 +16,8 @@ public class SingleServerCallsMockup extends SingleServerCalls {
     private PrivateKey privateKey;
     private HashMap<String, Password> passwordStorage;
 
+    private ServerCallsPoolMockup nodes;
+
     SingleServerCallsMockup() throws NoSuchAlgorithmException {
         KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
         keyPairGenerator.initialize(2048);
@@ -24,6 +26,10 @@ public class SingleServerCallsMockup extends SingleServerCalls {
         privateKey = keyPair.getPrivate();
         cryptoManager = new CryptoManager();
         passwordStorage = new HashMap<>();
+    }
+
+    public void addNodes(ServerCallsPoolMockup nodes){
+        this.nodes = nodes;
     }
 
     @Override

@@ -17,6 +17,7 @@ public class PwdManagerClientOneFaultyNodeMockupTest extends PwdManagerClientTes
         client = new PwdManagerClient();
         ServerCallsPoolMockup pool = new ServerCallsPoolMockup(3, 1);
 
+
         KeyStore ks = CryptoUtilities.readKeystoreFile("keystore.jceks", KEYSTORE_PASSWORD.toCharArray());
         client.init(ks, "asymm", KEYSTORE_PASSWORD.toCharArray(), "symm", KEYSTORE_PASSWORD.toCharArray(), pool);
         client.register_user();

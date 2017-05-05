@@ -26,5 +26,13 @@ public class ServerCallsPoolMockup extends ServerCallsPool {
             pool[goodNodes + faultyNullNodes + i] = new SingleServerCallsFaultyIntegrityMockup();
 
         setSingleServerCalls(pool);
+        setNodes();
+    }
+
+    public void setNodes(){
+        for(SingleServerCalls s: getSingleServerCalls()){
+            SingleServerCallsMockup server = (SingleServerCallsMockup) s;
+            server.addNodes(this);
+        }
     }
 }
