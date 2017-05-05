@@ -1,5 +1,6 @@
 package pt.ulisboa.tecnico.meic.sec.lib;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.MutablePair;
 import pt.ulisboa.tecnico.meic.sec.CryptoManager;
@@ -63,6 +64,12 @@ public class PwdManagerClient {
         } catch (ClassNotFoundException | IOException e) {
             System.err.println("Generating a new UUID random.");
             myDeviceId = UUID.randomUUID();
+            try (ObjectOutputStream out = new ObjectOutputStream(
+                    new BufferedOutputStream(new FileOutputStream(UUID_DAT)))) {
+                out.writeObject(myDeviceId);
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
         }
     }
 
@@ -96,27 +103,33 @@ public class PwdManagerClient {
         }
     }
 
-    public void save_password(String domain, String username, String password)
-            throws NotEnoughResponsesConsensusException {
+    public void save_password(String domain, String username, String password) {
         save_password(domain, username, password, true);
     }
 
-    private void save_password(String domain, String username, String password, boolean versionInc)
-            throws NotEnoughResponsesConsensusException {
+    private void save_password(String domain, String username, String password, boolean versionInc) {
         try {
             PublicKey publicKey = CryptoUtilities.getPublicKeyFromKeystore(keyStore, asymAlias, asymPwd);
             String[] encryptedStuff = encryptFields(domain, username, password, versionInc);
+
+            int version;
+            if (versionInc) {
+                version = getVersion(domain, username) + 1;
+                setVersion(domain, username, version);
+            } else
+                version = getVersion(domain, username);
 
             String[] fieldsToSend = new String[]{
                     cryptoManager.convertBinaryToBase64(publicKey.getEncoded()),
                     encryptedStuff[0], // domain
                     encryptedStuff[1], // username
                     encryptedStuff[2], // password
-                    encryptedStuff[3], // versionNumber
-                    encryptedStuff[4], // deviceId
-                    cryptoManager.convertBinaryToBase64(signFields(encryptedStuff)), //pwdSignature
+                    String.valueOf(version), // versionNumber
+                    myDeviceId.toString(), // deviceId
+                    cryptoManager.convertBinaryToBase64(signFields(
+                            ArrayUtils.addAll(encryptedStuff, String.valueOf(version), myDeviceId.toString()))), //pwdSignature
                     String.valueOf(cryptoManager.getActualTimestamp().getTime()), //timestamp
-                    cryptoManager.convertBinaryToBase64(cryptoManager.generateNonce(32)), //nonce
+                    cryptoManager.convertBinaryToBase64(cryptoManager.generateNonce(32)) //nonce
             };
 
             Password pwdToRegister = new Password(
@@ -132,28 +145,17 @@ public class PwdManagerClient {
                     cryptoManager.convertBinaryToBase64(signFields(fieldsToSend)) //reqSignature
             );
 
-            Password[] retrieved = call.putPassword(pwdToRegister);
+            Password result = call.putPassword(pwdToRegister);
 
             // If any response is insecure, we delete it.
-            for (int i = 0; i < retrieved.length; i++) {
-                Password p = retrieved[i];
-                if (p != null) {
-                    try {
-                        verifyEverything(publicKey, p);
-                    } catch (InvalidKeySpecException | NoSuchAlgorithmException | SignatureException |
-                            InvalidKeyException | ServersSignatureNotValidException |
-                            ServersIntegrityException | MessageNotFreshException e) {
-                        retrieved[i] = null;
-                    }
-                }
-            }
+            verifyEverything(publicKey, result);
+            System.out.println(result);
 
-            if (!enoughResponses(retrieved)) throw new NotEnoughResponsesConsensusException();
+            // We tried our best to put a password, let's check if it really is there
+            retrieve_password(domain, username);
 
-        } catch (InvalidKeyException | InvalidAlgorithmParameterException | KeyStoreException |
-                NoSuchAlgorithmException | UnrecoverableKeyException | SignatureException |
-                IllegalBlockSizeException | BadPaddingException | NoSuchPaddingException |
-                IOException e) {
+
+        } catch (Exception e) {
             e.printStackTrace();
             System.err.println(e.getMessage());
         }
@@ -164,6 +166,7 @@ public class PwdManagerClient {
         try {
             PublicKey publicKey = CryptoUtilities.getPublicKeyFromKeystore(keyStore, asymAlias, asymPwd);
             String[] encryptedStuff = encryptFields(domain, username);
+
 
             String[] fieldsToSend = new String[]{
                     cryptoManager.convertBinaryToBase64(publicKey.getEncoded()),
@@ -198,6 +201,7 @@ public class PwdManagerClient {
                     } catch (InvalidKeySpecException | NoSuchAlgorithmException | SignatureException |
                             InvalidKeyException | ServersSignatureNotValidException | MessageNotFreshException |
                             ServersIntegrityException e) {
+                        System.err.println(e.getMessage());
                         retrieved[i] = null;
                     }
                 }
@@ -207,13 +211,13 @@ public class PwdManagerClient {
 
             LocalPassword[] localPasswordArray = sortForMostRecentPassword(decipheredData);
             updateLocalPasswordVersion(localPasswordArray[0]);
-            // ver se houve processos diferentes
+
             // Atomic (1, N) Register
-            // #writeYourReads
-            if (localPasswordArray[localPasswordArray.length - 1].getVersion() != localPasswordArray[0].getVersion())
+            // If there are version inconsistencies
+            if (localPasswordArray[localPasswordArray.length - 1].getVersion() != localPasswordArray[0].getVersion()) {
                 save_password(localPasswordArray[0].getDomain(), localPasswordArray[0].getUsername(),
                         localPasswordArray[0].getPassword(), false);
-
+            }
             password = localPasswordArray[0].getPassword();
 
         } catch (InvalidKeyException | InvalidAlgorithmParameterException | KeyStoreException |
@@ -235,16 +239,7 @@ public class PwdManagerClient {
                 ex.printStackTrace();
             }
         });
-        Thread t2 = new Thread(() -> {
-            try (ObjectOutputStream out = new ObjectOutputStream(
-                    new BufferedOutputStream(new FileOutputStream(UUID_DAT)))) {
-                out.writeObject(myDeviceId);
-            } catch (IOException ex) {
-                ex.printStackTrace();
-            }
-        });
         t.start();
-        t2.start();
         keyStore = null;
         asymAlias = null;
         asymPwd = null;
@@ -252,7 +247,6 @@ public class PwdManagerClient {
         symPwd = null;
         try {
             t.join();
-            t2.join();
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -298,8 +292,8 @@ public class PwdManagerClient {
                 new String(decipherField(domain, username, p.getDomain())),
                 new String(decipherField(domain, username, p.getUsername())),
                 new String(decipherField(domain, username, p.getPassword())),
-                new String(decipherField(domain, username, p.getVersionNumber())),
-                new String(decipherField(domain, username, p.getDeviceId()))};
+                p.getVersionNumber(),
+                p.getDeviceId()};
     }
 
     private byte[] decipherField(String domain, String username, String field)
@@ -314,8 +308,6 @@ public class PwdManagerClient {
 
     private boolean enoughResponses(Object[] retrieved) {
         int n = call.size();
-        //System.out.println(n);
-        //System.out.println(countNotNull(retrieved));
         /* If there were more responses than the number of faults we tolerate, then we will proceed.
         *  The expression (2.0 / 3.0) * n - 1.0 / 6.0) is N = 3f + 1 solved in order to F
         */
@@ -339,19 +331,11 @@ public class PwdManagerClient {
             InvalidKeyException, BadPaddingException, InvalidAlgorithmParameterException, NoSuchPaddingException {
 
         byte[] iv = retrieveIV(domain, username); // this initializes the versionNumber if needed.
-        int version;
-        if (versionInc) {
-            version = getVersion(domain, username) + 1;
-            setVersion(domain, username, version);
-        } else
-            version = getVersion(domain, username);
 
         String[] stuff = new String[]{
                 domain,
                 username,
                 password,
-                String.valueOf(version),
-                myDeviceId.toString()
         };
 
         String[] encryptedStuff = new String[stuff.length];
@@ -433,9 +417,12 @@ public class PwdManagerClient {
                 retrieved.getUsername(),
                 retrieved.getPassword(),
                 retrieved.getVersionNumber(),
+                retrieved.getDeviceId(),
                 retrieved.getPwdSignature(),
                 retrieved.getTimestamp(),
                 retrieved.getNonce()};
+
+        //System.out.println(retrieved);
 
         PublicKey serverPublicKey = KeyFactory.getInstance("RSA").generatePublic(
                 new X509EncodedKeySpec(cryptoManager.convertBase64ToBinary(retrieved.getPublicKey()))

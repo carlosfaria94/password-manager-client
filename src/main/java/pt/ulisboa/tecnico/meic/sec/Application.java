@@ -68,6 +68,7 @@ public class Application {
                             System.out.print("Password: ");
                             String pwd = scanner.nextLine();
                             client.save_password(domain, username, pwd);
+                            System.out.println("Password registered!");
                             break;
                         // retrieve
                         case 3:

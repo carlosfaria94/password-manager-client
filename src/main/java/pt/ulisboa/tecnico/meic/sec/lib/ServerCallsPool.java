@@ -1,6 +1,10 @@
 package pt.ulisboa.tecnico.meic.sec.lib;
 
+import pt.ulisboa.tecnico.meic.sec.lib.exception.NotEnoughResponsesConsensusException;
+
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Random;
 
 public class ServerCallsPool {
     private int initialPort = 3001;
@@ -62,32 +66,48 @@ public class ServerCallsPool {
         return usersResponses;
     }
 
-
-    public Password[] putPassword(Password pwd) throws IOException {
-        Thread[] threads = new Thread[singleServerCalls.length];
-        Password[] passwordsResponse = new Password[singleServerCalls.length];
-        for (int i = 0; i < singleServerCalls.length || i < threads.length; i++) {
-            int finalI = i;
-            threads[i] = new Thread(() -> {
+    public Password putPassword(Password pwd) throws IOException, NotEnoughResponsesConsensusException {
+        final Password[] response = new Password[1];
+        ArrayList<Integer> replicasAlreadyVisited = new ArrayList<>();
+        // 0 - if for some reason replica returned null we try another one
+        // 1 - if we reached every replica we stop
+        final boolean[] state = {false, false};
+        do {
+            Thread thread = new Thread(() -> {
                 try {
-                    passwordsResponse[finalI] = singleServerCalls[finalI].putPassword(pwd);
+                    int replica, counter = 0;
+                    do {
+                        replica = new Random().nextInt(size());
+                        if (++counter == size()) { // If we tried all replicas
+                            state[1] = true;
+                            return;
+                        }
+                    } while (replicasAlreadyVisited.contains(replica));
+
+                    replicasAlreadyVisited.add(replica);
+                    response[0] = singleServerCalls[replica].putPassword(pwd);
                 } catch (Exception ignored) {
-                    // If a thread crashed, it's probably connection problems
+                } finally {
+                    if (response[0] == null) {
+                        state[0] = true;
+                    }
                 }
             });
-        }
-        for (Thread thread : threads) {
             thread.start();
-        }
-        for (Thread thread : threads) {
             try {
                 thread.join();
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-        }
-        return passwordsResponse;
+            if (state[1]) {
+                // There is no more replicas
+                throw new NotEnoughResponsesConsensusException();
+            }
+        } while (state[0]);
+
+        return response[0];
     }
+
 
     public Password[] retrievePassword(Password pwd) throws IOException {
         Thread[] threads = new Thread[singleServerCalls.length];
