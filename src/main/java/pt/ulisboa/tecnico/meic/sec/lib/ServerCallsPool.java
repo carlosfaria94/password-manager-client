@@ -108,7 +108,6 @@ public class ServerCallsPool {
         return response[0];
     }
 
-
     public Password[] retrievePassword(Password pwd) throws IOException {
         Thread[] threads = new Thread[singleServerCalls.length];
         Password[] passwordsResponse = new Password[singleServerCalls.length];
@@ -134,6 +133,15 @@ public class ServerCallsPool {
         }
 
         return passwordsResponse;
+    }
+
+    public IV getIv(IV iv) throws IOException {
+        return singleServerCalls[0].retrieveIV(iv);
+    }
+
+
+    public void sendIv(IV iv) throws IOException {
+        singleServerCalls[0].putIV(iv);
     }
 
     //Mockup purpose

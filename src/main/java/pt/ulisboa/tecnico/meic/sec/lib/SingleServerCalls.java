@@ -66,7 +66,6 @@ public class SingleServerCalls {
      * @throws IOException - when remote server fails to respond
      */
     public Password putPassword(Password pwd) throws IOException {
-        //System.out.println(pwd);
         RequestBody body = RequestBody.create(JSON, json.toJson(pwd));
         Request request = new Request.Builder()
                 .url(apiBaseUrl + "/password")
@@ -101,4 +100,37 @@ public class SingleServerCalls {
             return null;
         }
     }
+
+    public IV putIV(IV iv) throws IOException {
+        RequestBody body = RequestBody.create(JSON, json.toJson(iv));
+        Request request = new Request.Builder()
+                .url(apiBaseUrl + "/iv")
+                .put(body)
+                .build();
+        Response response = client.newCall(request).execute();
+
+        if (response.isSuccessful()) {
+            return json.fromJson(response.body().string(), IV.class);
+        } else {
+            return null;
+        }
+    }
+
+    public IV retrieveIV(IV iv) throws IOException {
+        String input = json.toJson(iv);
+
+        RequestBody body = RequestBody.create(JSON, input);
+        Request request = new Request.Builder()
+                .url(apiBaseUrl + "/retrieveIv")
+                .post(body)
+                .build();
+        Response response = client.newCall(request).execute();
+
+        if (response.isSuccessful()) {
+            return json.fromJson(response.body().string(), IV.class);
+        } else {
+            return null;
+        }
+    }
+
 }

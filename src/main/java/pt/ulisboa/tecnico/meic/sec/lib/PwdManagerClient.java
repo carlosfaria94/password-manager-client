@@ -2,7 +2,6 @@ package pt.ulisboa.tecnico.meic.sec.lib;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.MutablePair;
 import pt.ulisboa.tecnico.meic.sec.CryptoManager;
 import pt.ulisboa.tecnico.meic.sec.CryptoUtilities;
 import pt.ulisboa.tecnico.meic.sec.lib.exception.*;
@@ -21,9 +20,7 @@ import java.util.*;
 
 public class PwdManagerClient {
 
-    private static final int INITIAL_VERSION = 0;
     private static final int BYTES_IV = 16;
-    private static final String IV_HASH_DAT = "ivhash.dat";
     private static final String UUID_DAT = "uuid.dat";
 
     private transient KeyStore keyStore;
@@ -32,7 +29,7 @@ public class PwdManagerClient {
     private transient String symAlias;
     private transient char[] symPwd;
 
-    private TreeMap<ImmutablePair<String, String>, MutablePair<byte[], Integer>> ivMap;
+    private TreeMap<ImmutablePair<String, String>, byte[]> ivCache;
     private CryptoManager cryptoManager;
     private ServerCallsPool call;
     private UUID myDeviceId;
@@ -51,7 +48,7 @@ public class PwdManagerClient {
 
         call = new ServerCallsPool();
         cryptoManager = new CryptoManager();
-        loadIvs();
+        ivCache = new TreeMap<>();
         loadDeviceId();
     }
 
@@ -76,23 +73,7 @@ public class PwdManagerClient {
             String publicKeyB64 = cryptoManager.convertBinaryToBase64(publicKey.getEncoded());
             User user = new User(publicKeyB64, cryptoManager.convertBinaryToBase64(signFields(new String[]{publicKeyB64})));
 
-            User[] retrieved = call.register(user);
-
-            /*
-            // If any response is insecure, we delete it.
-            for (int i = 0; i < retrieved.length; i++) {
-                User u = retrieved[i];
-                if (u != null) {
-                    try {
-                        isValidFingerprint(publicKeyB64, u.getFingerprint());
-                    } catch (NoSuchAlgorithmException e) {
-                        retrieved[i] = null;
-                    }
-                }
-            }
-
-            if (!enoughResponses(retrieved)) throw new NotEnoughResponsesConsensusException();
-            */
+            call.register(user);
 
         } catch (UnrecoverableKeyException | NoSuchAlgorithmException
                 | KeyStoreException | InvalidKeyException | SignatureException | IOException e) {
@@ -102,6 +83,7 @@ public class PwdManagerClient {
 
     public void save_password(String domain, String username, String password) {
         save_password(domain, username, password, true);
+        ivCache.remove(new ImmutablePair<>(domain, username));
     }
 
     private void save_password(String domain, String username, String password, boolean versionInc) {
@@ -229,36 +211,26 @@ public class PwdManagerClient {
             }
             password = localPasswordArray[0];
 
+            ivCache.remove(new ImmutablePair<>(domain, username));
+
         } catch (InvalidKeyException | InvalidAlgorithmParameterException | KeyStoreException |
                 NoSuchAlgorithmException | UnrecoverableKeyException | SignatureException |
                 IllegalBlockSizeException | BadPaddingException |
                 NoSuchPaddingException | IOException e) {
             e.printStackTrace();
             System.err.println(e.getMessage());
+        } catch (InvalidKeySpecException e) {
+            e.printStackTrace();
         }
         return password;
     }
 
     public void close() {
-        Thread t = new Thread(() -> {
-            try (ObjectOutputStream out = new ObjectOutputStream(
-                    new BufferedOutputStream(new FileOutputStream(IV_HASH_DAT)))) {
-                out.writeObject(ivMap);
-            } catch (IOException ex) {
-                ex.printStackTrace();
-            }
-        });
-        t.start();
         keyStore = null;
         asymAlias = null;
         asymPwd = null;
         symAlias = null;
         symPwd = null;
-        try {
-            t.join();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
     }
 
     private void verifyEverything(PublicKey publicKey, Password p)
@@ -277,26 +249,9 @@ public class PwdManagerClient {
         return array;
     }
 
-    private void updateLocalPasswordVersion(LocalPassword localPassword) {
-        if (localPassword.getVersion() > getVersion(localPassword.getDomain(), localPassword.getUsername())) {
-            System.out.println("Server version is greater than the client. This can occur in a sync problem. " +
-                    "Do you want to update your version records? [Y/n]");
-            Scanner scanner = new Scanner(System.in);
-            if (scanner.nextLine().equalsIgnoreCase("y")) {
-                setVersion(localPassword.getDomain(), localPassword.getUsername(), localPassword.getVersion());
-                System.out.println("Version updated!");
-            } else if (scanner.nextLine().equalsIgnoreCase("n")) {
-                System.out.println("Skip updated!");
-            } else
-                System.out.println("Assuming default: Skip Update");
-        } else
-            setVersion(localPassword.getDomain(), localPassword.getUsername(), localPassword.getVersion());
-        //System.out.println("Password Selected:\n" + localPassword);
-    }
-
     private String[] decipherFields(String domain, String username, Password p) throws
             NoSuchAlgorithmException, NoSuchPaddingException, InvalidAlgorithmParameterException, InvalidKeyException,
-            BadPaddingException, IllegalBlockSizeException, UnrecoverableKeyException, KeyStoreException {
+            BadPaddingException, IllegalBlockSizeException, UnrecoverableKeyException, KeyStoreException, SignatureException, IOException, InvalidKeySpecException {
         return new String[]{
                 new String(decipherField(domain, username, p.getDomain())),
                 new String(decipherField(domain, username, p.getUsername())),
@@ -308,7 +263,7 @@ public class PwdManagerClient {
     private byte[] decipherField(String domain, String username, String field)
             throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidAlgorithmParameterException,
             InvalidKeyException, BadPaddingException, IllegalBlockSizeException, UnrecoverableKeyException,
-            KeyStoreException {
+            KeyStoreException, SignatureException, IOException, InvalidKeySpecException {
         return cryptoManager.runAES(cryptoManager.convertBase64ToBinary(field),
                 CryptoUtilities.getAESKeyFromKeystore(keyStore, symAlias, symPwd),
                 retrieveIV(domain, username),
@@ -343,9 +298,9 @@ public class PwdManagerClient {
 
     private String[] encryptFields(String domain, String username, String password)
             throws NoSuchAlgorithmException, UnrecoverableKeyException, KeyStoreException, IllegalBlockSizeException,
-            InvalidKeyException, BadPaddingException, InvalidAlgorithmParameterException, NoSuchPaddingException {
+            InvalidKeyException, BadPaddingException, InvalidAlgorithmParameterException, NoSuchPaddingException, SignatureException, IOException {
 
-        byte[] iv = retrieveIV(domain, username); // this initializes the versionNumber if needed.
+        byte[] iv = generateIv(domain, username); // this initializes the versionNumber if needed.
 
         String[] stuff = new String[]{
                 domain,
@@ -367,28 +322,69 @@ public class PwdManagerClient {
         return encryptedStuff;
     }
 
-    private int getVersion(String domain, String username) {
-        return ivMap.get(new ImmutablePair<>(domain, username)).getRight();
-    }
-
-    private void setVersion(String domain, String username, int version) {
-        ivMap.get(new ImmutablePair<>(domain, username)).setRight(version);
-    }
-
-    private byte[] retrieveIV(String domain, String username) throws NoSuchAlgorithmException {
-        ImmutablePair<String, String> key = new ImmutablePair<>(domain, username);
-        if (ivMap.containsKey(key)) return ivMap.get(key).getLeft();
-        else {
-            byte[] iv = cryptoManager.generateIV(BYTES_IV);
-            ivMap.put(key, new MutablePair<>(iv, INITIAL_VERSION));
-            return iv;
+    private byte[] retrieveIV(String domain, String username) throws NoSuchAlgorithmException, UnrecoverableKeyException, KeyStoreException, SignatureException, InvalidKeyException, IOException, InvalidKeySpecException {
+        final ImmutablePair<String, String> immutablePair = new ImmutablePair<>(domain, username);
+        if(ivCache.containsKey(immutablePair)){
+            return ivCache.get(immutablePair);
         }
+        else {
+            String[] toSign = new String[]{
+                    getHash(domain, username),
+                    cryptoManager.getActualTimestamp().toString(),
+                    cryptoManager.convertBinaryToBase64( cryptoManager.generateNonce(32))
+            };
+            IV iv = call.getIv(new IV(cryptoManager.convertBinaryToBase64(
+                    CryptoUtilities.getPublicKeyFromKeystore(keyStore, asymAlias, asymPwd).getEncoded()),
+                    toSign[0], toSign[1], toSign[2],  cryptoManager.convertBinaryToBase64(signFields(toSign))));
+            //verifyIVInsertSignature(iv);
+            byte[] iv2 = cryptoManager.convertBase64ToBinary(iv.getValue());
+            ivCache.put(immutablePair, iv2);
+            return iv2;
+        }
+    }
+    void verifyIVInsertSignature(IV iv) throws NoSuchAlgorithmException, InvalidKeySpecException, SignatureException, InvalidKeyException {
+        PublicKey publicKey = KeyFactory.getInstance("RSA").generatePublic(
+                new X509EncodedKeySpec(cryptoManager.convertBase64ToBinary(iv.publicKey))
+        );
+
+        String[] myFields = new String[]{
+                iv.publicKey,
+                iv.hash,
+                iv.value,
+                iv.timestamp,
+                iv.nonce
+        };
+
+        if (!cryptoManager.isValidSig(publicKey, myFields, iv.reqSignature))
+            throw new SignatureException();
+        //cryptoManager.isTimestampAndNonceValid(iv.nonce, iv.timestamp);
+    }
+
+    private String getHash(String domain, String username) throws UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException {
+
+        return cryptoManager.convertBinaryToBase64(cryptoManager.digest(
+                ArrayUtils.addAll(ArrayUtils.addAll(domain.getBytes(), username.getBytes())
+                        , CryptoUtilities.getAESKeyFromKeystore(keyStore, symAlias, symPwd).getEncoded())));
+    }
+
+    private byte[] generateIv(String domain, String username) throws NoSuchAlgorithmException, UnrecoverableKeyException, KeyStoreException, SignatureException, InvalidKeyException, IOException {
+        byte[] iv = cryptoManager.generateIV(BYTES_IV);
+        String[] toSign = new String[]{
+                getHash(domain, username),
+                cryptoManager.convertBinaryToBase64(iv),
+                cryptoManager.getActualTimestamp().toString(),
+                cryptoManager.convertBinaryToBase64( cryptoManager.generateNonce(32))
+        };
+        call.sendIv(new IV(cryptoManager.convertBinaryToBase64(
+                CryptoUtilities.getPublicKeyFromKeystore(keyStore, asymAlias, asymPwd).getEncoded()),
+                toSign[0], toSign[1], toSign[2], toSign[3],  cryptoManager.convertBinaryToBase64(signFields(toSign))));
+        return iv;
     }
 
     private String[] encryptFields(String domain, String username)
             throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidAlgorithmParameterException,
             InvalidKeyException, BadPaddingException, IllegalBlockSizeException, UnrecoverableKeyException,
-            KeyStoreException {
+            KeyStoreException, SignatureException, IOException, InvalidKeySpecException {
         byte[] iv = retrieveIV(domain, username);
         String[] stuff = new String[]{domain, username};
         String[] encryptedStuff = new String[stuff.length];
@@ -460,25 +456,11 @@ public class PwdManagerClient {
         return cryptoManager.convertBinaryToBase64(cryptoManager.digest(pubKey));
     }
 
-    private boolean isValidFingerprint(String publicKey, String receivedFingerprint) throws NoSuchAlgorithmException {
-        return this.generateFingerprint(publicKey).equals(receivedFingerprint);
-    }
-
-    private void loadIvs() throws NoSuchAlgorithmException {
-        try (ObjectInputStream in = new ObjectInputStream(new BufferedInputStream(new FileInputStream(IV_HASH_DAT)))) {
-            ivMap = (TreeMap<ImmutablePair<String, String>, MutablePair<byte[], Integer>>) in.readObject();
-        } catch (ClassNotFoundException | IOException e) {
-            e.printStackTrace();
-            System.err.println(e.getMessage() + "\nStarting a new IV Table.");
-            ivMap = new TreeMap<>();
-        }
-    }
-
     // Only for JUnit
     public void init(KeyStore keyStore, String asymAlias, char[] asymPwd, String symAlias, char[] symPwd,
                      ServerCallsPool serverCalls) throws NoSuchAlgorithmException {
         init(keyStore, asymAlias, asymPwd, symAlias, symPwd);
         call = serverCalls;
-        ivMap = new TreeMap<>();
+        ivCache = new TreeMap<>();
     }
 }
