@@ -136,12 +136,62 @@ public class ServerCallsPool {
     }
 
     public IV getIv(IV iv) throws IOException {
-        return singleServerCalls[0].retrieveIV(iv);
+        Thread[] threads = new Thread[singleServerCalls.length];
+        IV[] ivResponse = new IV[singleServerCalls.length];
+        for (int i = 0; i < singleServerCalls.length || i < threads.length; i++) {
+            int finalI = i;
+            threads[i] = new Thread(() -> {
+                try {
+                    ivResponse[finalI] = singleServerCalls[finalI].retrieveIV(iv);
+                } catch (Exception ignored) {
+                    // If a thread crashed, it's probably connection problems
+                }
+            });
+        }
+        for (Thread thread : threads) {
+            thread.start();
+        }
+        for (Thread thread : threads) {
+            try {
+                thread.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+
+        for (IV _iv: ivResponse) {
+            if (_iv != null) {
+                return _iv;
+            }
+        }
+
+        return null;
     }
 
 
     public void sendIv(IV iv) throws IOException {
-        singleServerCalls[0].putIV(iv);
+        Thread[] threads = new Thread[singleServerCalls.length];
+
+        for (int i = 0; i < singleServerCalls.length || i < threads.length; i++) {
+            int finalI = i;
+            threads[i] = new Thread(() -> {
+                try {
+                    singleServerCalls[finalI].putIV(iv);
+                } catch (Exception ignored) {
+                    // If a thread crashed, it's probably connection problems
+                }
+            });
+        }
+        for (Thread thread : threads) {
+            thread.start();
+        }
+        for (Thread thread : threads) {
+            try {
+                thread.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     //Mockup purpose
