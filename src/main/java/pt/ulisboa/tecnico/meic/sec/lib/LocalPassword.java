@@ -55,8 +55,8 @@ public class LocalPassword implements Comparable {
                 "domain='" + domain + '\'' +
                 ", username='" + username + '\'' +
                 ", password='" + password + '\'' +
-                ", version=" + version + '\'' +
                 ", deviceId=" + deviceId +
+                ", version=" + version + '\'' +
                 '}';
     }
 

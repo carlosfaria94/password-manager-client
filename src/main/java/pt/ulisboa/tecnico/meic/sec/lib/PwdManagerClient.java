@@ -97,7 +97,6 @@ public class PwdManagerClient {
                 lastPut = retrieve_password(domain, username);
                 version = lastPut.getVersion();
             }catch (AllNullException e){
-                System.out.println("Version ini");
                 version = 1;
                 versionInc = false;
             }
